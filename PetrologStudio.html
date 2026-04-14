@@ -1,0 +1,3748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Petrolog Studio — Well Logs and Formation Tops Analysis Tool</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg: #1a1f2e;
+      --sidebar: #252d3d;
+      --card: #2a3142;
+      --border: #3d4560;
+      --accent: #e05c6b;
+      --blue: #5b9de8;
+      --text: #eceff1;
+      --muted: #90a4ae;
+      --green: #4caf50;
+      --orange: #ff9800;
+      --warn-bg: #fff3e0;
+      --fail-bg: #ffebee;
+    }
+    html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; font-size:13px; }
+    body { display:flex; flex-direction:column; }
+
+    .hdr { background:linear-gradient(135deg, #1a1f2e 0%, #2a3142 100%); border-bottom:2px solid var(--border); padding:12px 20px; display:flex; justify-content:space-between; align-items:center; z-index:100; }
+    .hdr-logo { font-size:28px; margin-right:12px; }
+    .hdr-content { display:flex; flex-direction:column; }
+    .hdr-title { font-size:18px; font-weight:700; color:var(--text); }
+    .hdr-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+    .hdr-right { display:flex; gap:12px; align-items:center; }
+    .badge { padding:4px 12px; border-radius:3px; font-size:10px; font-weight:700; text-transform:uppercase; }
+    .badge.blue { background:rgba(91,157,232,0.3); color:#8aabff; }
+    .badge.green { background:rgba(76,175,80,0.3); color:#81c784; }
+
+    .body-wrap { display:flex; flex:1; min-height:0; }
+
+    .sidebar { width:310px; flex-shrink:0; background:var(--sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+    /* ── Sidebar text/button size bump (applied globally within .sidebar) ── */
+    .sidebar { font-size:14px; }
+    .sidebar .sec { font-size:12.5px; }
+    .sidebar .btn { font-size:13px; padding:9px 15px; }
+    .sidebar .btn-small { font-size:11px; padding:5px 10px; }
+    .sidebar .toolbar-btn { font-size:12px; padding:7px 13px; }
+    .sidebar .well-card { font-size:12px; }
+    .sidebar .well-item-name { font-size:13px; }
+    .sidebar .well-btn { font-size:16px; }
+    .sidebar .dz-sub { font-size:12px; }
+    .sidebar .depth-grid label, .sidebar .ph-row label { font-size:11px; }
+    .sidebar .depth-grid input, .sidebar .ph-row input { font-size:12px; padding:7px; }
+    .sidebar .c-search { font-size:12px; padding:7px; }
+    .sidebar .c-row { font-size:12px; padding:5px 6px; }
+    .sidebar .c-row-unit { font-size:11px; }
+    .sidebar .c-row-input { font-size:11px; padding:3px 4px; }
+    .sidebar .formation-name { font-size:12px; }
+    .sidebar .formation-depths { font-size:11px; }
+    .sidebar label { font-size:12px; }
+    .sidebar select, .sidebar input[type=text], .sidebar input[type=number] { font-size:12px; }
+    .sb-scroll { flex:1; overflow-y:auto; overflow-x:hidden; padding:12px; }
+    .sb-scroll::-webkit-scrollbar { width:6px; }
+    .sb-scroll::-webkit-scrollbar-track { background:transparent; }
+    .sb-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    .dropzone { background:linear-gradient(135deg,rgba(91,157,232,0.15),rgba(224,92,107,0.15)); border:2px dashed var(--border); border-radius:6px; padding:20px; text-align:center; cursor:pointer; transition:all 0.2s; }
+    .dropzone:hover { border-color:var(--blue); background:linear-gradient(135deg,rgba(91,157,232,0.25),rgba(224,92,107,0.25)); }
+    .dropzone.over { border-color:var(--accent); background:linear-gradient(135deg,rgba(91,157,232,0.35),rgba(224,92,107,0.35)); }
+    .dropzone.ok { border-color:var(--green); background:rgba(76,175,80,0.15); }
+    .dz-icon { font-size:28px; margin-bottom:8px; }
+    .dz-title { font-weight:600; margin-bottom:4px; color:var(--text); }
+    .dz-sub { font-size:11px; color:var(--muted); }
+
+    .sec { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); margin-top:16px; margin-bottom:8px; padding-left:8px; border-left:3px solid var(--accent); display:flex; justify-content:space-between; align-items:center; }
+    .sec-right { font-weight:400; color:var(--text); }
+
+    .well-card { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:10px; font-size:11px; line-height:1.6; }
+    .well-row { display:flex; justify-content:space-between; margin-bottom:6px; }
+    .well-label { color:var(--muted); }
+    .well-value { color:var(--text); font-weight:600; }
+
+    .well-list { margin-bottom:12px; }
+    .well-item { background:var(--card); border:1px solid var(--border); border-radius:4px; padding:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all 0.2s; }
+    .well-item:hover { background:rgba(91,157,232,0.2); border-color:var(--blue); }
+    .well-item.selected { background:rgba(91,157,232,0.25); border-color:var(--blue); }
+    .well-item-name { flex:1; font-size:12px; font-weight:600; }
+    .well-item-btns { display:flex; gap:4px; }
+    .well-btn { background:transparent; border:none; cursor:pointer; font-size:14px; padding:2px; color:var(--muted); transition:color 0.2s; }
+    .well-btn:hover { color:var(--text); }
+
+    .depth-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+    .depth-grid label { font-size:10px; color:var(--muted); display:block; margin-bottom:2px; }
+    .depth-grid input { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); padding:6px; font-size:11px; }
+    .depth-grid input:focus { outline:none; border-color:var(--blue); }
+
+    .ph-row { display:flex; justify-content:space-between; align-items:center; }
+    .ph-row label { font-size:10px; color:var(--muted); }
+    .ph-row input { width:70px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); padding:4px; font-size:11px; }
+
+    .c-search { width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); padding:6px; font-size:11px; margin-bottom:8px; }
+    .c-search:focus { outline:none; border-color:var(--blue); }
+
+    .c-col-hdr { display:grid; grid-template-columns:18px 1fr 45px 40px 35px; gap:6px; padding:6px 6px; font-size:9px; font-weight:700; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+    .ch-name { text-align:left; }
+    .ch-unit { text-align:center; }
+    .ch-trk { text-align:center; }
+    .ch-scl { text-align:center; }
+    .ch-rev { text-align:center; }
+
+    .c-list { max-height:400px; overflow-y:auto; }
+    .c-list::-webkit-scrollbar { width:5px; }
+    .c-list::-webkit-scrollbar-track { background:transparent; }
+    .c-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+    .c-row { display:grid; grid-template-columns:18px 1fr 45px 40px 35px; gap:6px; align-items:center; padding:4px 6px; border-bottom:1px solid rgba(61,69,96,0.3); font-size:11px; }
+    .c-row:hover { background:rgba(91,157,232,0.1); }
+    .c-row input[type=checkbox] { cursor:pointer; }
+    .c-row input[type=checkbox]:disabled { cursor:not-allowed; opacity:0.5; }
+    .c-row-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .c-row-unit { text-align:center; font-size:10px; color:var(--muted); }
+    .c-row-input { width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:2px; color:var(--text); padding:2px 4px; text-align:center; font-size:10px; }
+    .c-row-input:focus { outline:none; border-color:var(--blue); }
+
+    .sb-foot { padding:12px; border-top:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { border:none; border-radius:3px; padding:8px 14px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .btn-red { background:var(--accent); color:#fff; }
+    .btn-red:hover { background:#d84b5a; }
+    .btn-ghost { background:rgba(255,255,255,0.1); color:var(--text); border:1px solid var(--border); }
+    .btn-ghost:hover { background:rgba(255,255,255,0.15); }
+    .btn-blue { background:var(--blue); color:#fff; }
+    .btn-blue:hover { background:#4a8fd0; }
+    .btn-small { padding:4px 8px; font-size:10px; }
+
+    .main { flex:1; background:var(--bg); display:flex; flex-direction:column; min-height:0; }
+
+    .empty { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:40px; text-align:center; }
+    .eicon { font-size:64px; margin-bottom:20px; }
+    .empty h2 { font-size:22px; margin-bottom:12px; }
+    .empty p { color:var(--muted); margin-bottom:24px; max-width:500px; }
+    .steps { text-align:left; display:inline-block; }
+    .step { display:flex; align-items:center; margin-bottom:12px; }
+    .step-n { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; margin-right:12px; flex-shrink:0; }
+    .step span { color:var(--muted); }
+    .step strong { color:var(--text); }
+
+    .plot-toolbar { background:var(--sidebar); border-bottom:1px solid var(--border); padding:10px 12px; display:flex; gap:8px; flex-wrap:wrap; }
+    .toolbar-btn { background:var(--card); border:1px solid var(--border); border-radius:3px; padding:6px 12px; color:var(--text); font-size:11px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .toolbar-btn:hover { background:rgba(91,157,232,0.2); border-color:var(--blue); }
+
+    .plot-container { position:relative; flex:1; background:var(--bg); min-height:0; }
+    .plot-scroll { position:absolute; top:0; left:0; right:0; bottom:0; overflow:scroll; padding:10px; cursor:grab; }
+    .plot-scroll.panning { cursor:grabbing; }
+    #pw { display:inline-block; }
+    #pw svg { background:#fff; border:1px solid var(--border); box-shadow:0 4px 16px rgba(0,0,0,0.4); }
+
+
+    .tt { position:fixed; background:rgba(42,49,66,0.95); border:1px solid var(--border); border-radius:4px; padding:8px 12px; font-size:10px; color:var(--text); pointer-events:none; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.6); max-width:300px; }
+    .tt::-webkit-scrollbar { width:4px; }
+    .tt::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    .tt-depth { font-weight:700; color:var(--accent); margin-bottom:6px; }
+    .tt-row { display:flex; align-items:center; margin-bottom:4px; gap:6px; }
+    .tt-dot { display:inline-block; width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+    .tt-nm { font-weight:600; flex-shrink:0; }
+    .tt-vl { color:var(--text); }
+
+    /* ─── MODALS ─── */
+    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); display:none; z-index:1001; }
+    .modal-overlay.open { display:flex; align-items:flex-end; justify-content:center; }
+    .modal-content { background:var(--card); border:1px solid var(--border); border-radius:6px 6px 0 0; max-height:90vh; width:100%; max-width:1000px; display:flex; flex-direction:column; animation:slideUp 0.3s ease; box-shadow:0 -4px 16px rgba(0,0,0,0.6); }
+    @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+
+    .modal-header { padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+    .modal-header h2 { font-size:16px; font-weight:700; }
+    .modal-close { background:transparent; border:none; color:var(--text); font-size:24px; cursor:pointer; padding:0; width:28px; height:28px; display:flex; align-items:center; justify-content:center; }
+    .modal-close:hover { color:var(--accent); }
+
+    .modal-body { flex:1; overflow-y:auto; padding:16px; }
+    .modal-footer { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+
+    /* Floating QC Panel */
+    .float-panel { position:fixed; display:none; z-index:1002; background:var(--card); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.5); min-width:420px; max-width:90vw; max-height:85vh; flex-direction:column; resize:both; overflow:hidden; }
+    .float-panel.open { display:flex; }
+    .float-panel-header { padding:10px 14px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; cursor:move; user-select:none; border-radius:8px 8px 0 0; }
+    .float-panel-header h2 { font-size:14px; font-weight:700; margin:0; pointer-events:none; }
+    .float-panel-body { flex:1; overflow-y:auto; padding:14px; }
+    .float-panel-toolbar { display:flex; gap:6px; align-items:center; }
+    .float-panel-toolbar button { background:transparent; border:1px solid var(--border); color:var(--text); font-size:12px; cursor:pointer; padding:3px 8px; border-radius:4px; }
+    .float-panel-toolbar button:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    .tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:16px; }
+    .tab { padding:11px 18px; font-size:14px; font-weight:700; letter-spacing:0.3px; cursor:pointer; border:none; background:transparent; color:var(--muted); border-bottom:2px solid transparent; transition:all 0.2s; }
+    .tab:hover { color:var(--text); }
+    .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+
+    .form-group { margin-bottom:16px; }
+    .form-label { font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:6px; }
+    .form-input { width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:3px; color:var(--text); padding:8px; font-size:12px; }
+    .form-input:focus { outline:none; border-color:var(--blue); }
+
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+    .stat-card { background:var(--sidebar); border:1px solid var(--border); border-radius:4px; padding:12px; }
+    .stat-label { font-size:10px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; }
+    .stat-value { font-size:18px; font-weight:700; color:var(--text); }
+    .stat-unit { font-size:10px; color:var(--muted); }
+
+    .table-scroll { overflow:auto; }
+    .table { width:100%; border-collapse:collapse; font-size:11px; }
+    .table th { background:var(--sidebar); padding:8px; text-align:left; font-weight:700; cursor:pointer; user-select:none; border-bottom:1px solid var(--border); }
+    .table th:hover { background:rgba(91,157,232,0.2); }
+    .table td { padding:6px 8px; border-bottom:1px solid rgba(61,69,96,0.3); }
+    .table tr:hover { background:rgba(91,157,232,0.1); }
+    .table-null { background:rgba(224,92,107,0.2); color:#ff8a95; }
+
+    .formation-item { background:var(--sidebar); border:1px solid var(--border); border-radius:3px; padding:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .formation-color { width:20px; height:20px; border-radius:3px; border:1px solid var(--border); cursor:pointer; }
+    .formation-info { flex:1; }
+    .formation-name { font-weight:600; font-size:11px; }
+    .formation-depths { font-size:10px; color:var(--muted); }
+    .formation-btns { display:flex; gap:4px; }
+
+    .badge-pass { background:rgba(76,175,80,0.3); color:#81c784; padding:4px 9px; border-radius:3px; font-size:12px; font-weight:700; }
+    .badge-warn { background:rgba(255,152,0,0.3); color:#ffb74d; padding:4px 9px; border-radius:3px; font-size:12px; font-weight:700; }
+    .badge-fail { background:rgba(224,92,107,0.3); color:#ff8a95; padding:4px 9px; border-radius:3px; font-size:12px; font-weight:700; }
+
+    .qc-item { background:var(--sidebar); border:1px solid var(--border); border-radius:3px; padding:12px 14px; margin-bottom:10px; }
+    .qc-title { font-weight:800; font-size:14px; letter-spacing:0.3px; display:flex; align-items:center; gap:8px; margin-bottom:8px; color:var(--text); }
+    .qc-detail { font-size:13px; color:var(--muted); font-weight:600; line-height:1.6; }
+
+    /* Fill panel animation */
+    .fill-panel { max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
+    .fill-panel.open { max-height:200px; }
+
+    #tt { display:none; position:fixed; z-index:1000; }
+  </style>
+</head>
+<body>
+
+<div class="hdr">
+  <div style="display:flex; align-items:center;">
+    <div class="hdr-logo">📊</div>
+    <div class="hdr-content">
+      <div class="hdr-title">Petrolog <span style="color:#4dd0e1;">Studio</span> <span style="color:var(--muted); font-weight:500; font-size:13px;">(By: <span style="color:#ef5350; font-weight:700;">TerraNomad</span>)</span> <span style="color:var(--muted); font-weight:500; font-size:11px; background:rgba(77,208,225,0.12); padding:2px 6px; border-radius:4px; margin-left:4px;">Supports LAS 1.2 &amp; 2.0</span></div>
+      <div class="hdr-sub">Well Logs and Formation Tops Analysis Tool</div>
+    </div>
+  </div>
+  <div class="hdr-right" style="display:flex;gap:6px;align-items:center;">
+    <button class="toolbar-btn" onclick="saveSession()" title="Save session to file" style="font-size:10px;padding:4px 10px;">💾 Save</button>
+    <button class="toolbar-btn" onclick="document.getElementById('session-file-input').click()" title="Load session from file" style="font-size:10px;padding:4px 10px;">📂 Load</button>
+    <input type="file" id="session-file-input" accept=".json" style="display:none">
+    <span class="badge blue" id="file-badge" style="display:none"></span>
+  </div>
+</div>
+
+<div class="body-wrap">
+  <aside class="sidebar">
+    <div class="sb-scroll">
+      <div class="dropzone" id="dz">
+        <div class="dz-icon">📥</div>
+        <div class="dz-title">Load LAS Files</div>
+        <div class="dz-sub">Drag & drop or click to browse<br><span style="font-size:0.75rem;color:var(--muted)">LAS 1.2/2.0 · WRAP YES/NO</span></div>
+        <input type="file" id="file-input" accept=".las,.LAS,.txt" multiple style="display:none">
+      </div>
+
+      <div id="wells-section" style="display:none">
+        <div class="sec">WELLS <span class="sec-right" id="well-count">0</span></div>
+        <div class="well-list" id="well-list"></div>
+        <button class="btn btn-ghost btn-small" id="clear-wells-btn" style="width:100%; margin-bottom:10px">Clear All</button>
+      </div>
+
+      <div id="well-info-section" style="display:none">
+        <div class="sec">WELL INFO <button class="well-btn" id="metadata-edit-btn" title="Edit metadata">✏️</button></div>
+        <div class="well-card" id="well-info"></div>
+      </div>
+
+      <div id="formations-section" style="display:none">
+        <div class="sec">FORMATIONS <button class="well-btn" id="formations-add-btn" title="Add formation">+</button> <button class="well-btn" id="formations-csv-btn" title="Import CSV">⬆️</button> <button class="well-btn" id="formations-display-btn" title="Toggle formation tops display" style="font-size:10px;">👁️ Show</button></div>
+        <div id="formation-display-opts" style="display:none; padding:4px 8px; background:rgba(0,0,0,0.15); border-radius:4px; margin-bottom:4px;">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">
+            <label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px;"><input type="checkbox" id="form-show-lines" checked> Lines</label>
+            <label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px;"><input type="checkbox" id="form-show-labels" checked> Labels</label>
+            <label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px;"><input type="checkbox" id="form-show-fill" checked> Fill</label>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            <label style="font-size:10px;color:var(--muted);">Style:</label>
+            <select id="form-line-style" style="font-size:10px;padding:1px 4px;background:var(--card);border:1px solid var(--border);border-radius:3px;color:var(--text);">
+              <option value="solid">Solid</option>
+              <option value="dashed" selected>Dashed</option>
+              <option value="dotted">Dotted</option>
+            </select>
+            <label style="font-size:10px;color:var(--muted);">Width:</label>
+            <select id="form-line-width" style="font-size:10px;padding:1px 4px;background:var(--card);border:1px solid var(--border);border-radius:3px;color:var(--text);">
+              <option value="1">Thin (1px)</option>
+              <option value="2" selected>Medium (2px)</option>
+              <option value="3">Bold (3px)</option>
+              <option value="4">Extra Bold (4px)</option>
+            </select>
+          </div>
+        </div>
+        <div id="formation-list" style="max-height:150px; overflow-y:auto;"></div>
+      </div>
+
+      <!-- Zones (user-defined intervals between any two formation tops) -->
+      <div id="zones-section" style="display:none;">
+        <div class="sec">ZONES <span class="sec-right"><button id="zones-add-btn" title="Define new zone" style="background:var(--accent);color:#fff;border:none;border-radius:3px;padding:2px 6px;font-size:11px;cursor:pointer;">+ Add Zone</button></span></div>
+        <div id="zones-list" style="max-height:180px; overflow-y:auto;"></div>
+      </div>
+
+      <div id="depth-section" style="display:none">
+        <div class="sec">DEPTH RANGE <span class="sec-right" id="depth-unit-lbl"></span></div>
+        <div class="depth-grid">
+          <label>Top</label>  <input type="number" id="d-top" step="any" placeholder="Top">
+          <label>Base</label> <input type="number" id="d-base" step="any" placeholder="Base">
+        </div>
+        <div class="ph-row">
+          <label>Height (px)</label>
+          <input type="number" id="ph" value="900" min="300" max="10000" step="50">
+        </div>
+      </div>
+
+      <div id="curves-section" style="display:none">
+        <div class="sec">CURVES <span class="sec-right" id="c-count"></span></div>
+        <input class="c-search" type="text" id="c-search" placeholder="🔍 Filter…" autocomplete="off">
+        <div class="c-col-hdr">
+          <span></span>
+          <span class="ch-name">Name</span>
+          <span class="ch-unit">Unit</span>
+          <span class="ch-trk">Trk</span>
+          <span class="ch-scl">Scl</span>
+          <span class="ch-rev">Rev</span>
+        </div>
+        <div class="c-list" id="c-list"></div>
+      </div>
+    </div>
+
+    <div class="sb-foot" id="sb-foot" style="display:none">
+      <button class="btn btn-ghost btn-small" id="sel-all-btn" onclick="toggleAll()">Select All</button>
+      <button class="btn btn-red" style="flex:1" onclick="plotLogs()">📊 Plot</button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="empty" id="empty-state">
+      <div class="eicon">🪨</div>
+      <h2>Load a LAS File to Begin</h2>
+      <p>Drop or browse to your well log files to explore and visualize the data.</p>
+      <div class="steps">
+        <div class="step"><span class="step-n">①</span><span>Load one or more <strong>.las</strong> files</span></div>
+        <div class="step"><span class="step-n">②</span><span>Configure depth range, tracks, and curve scales</span></div>
+        <div class="step"><span class="step-n">③</span><span>Click <strong>Plot</strong> to visualize selected curves</span></div>
+        <div class="step"><span class="step-n">④</span><span>Use toolbar buttons for stats, tables, exports, and QC</span></div>
+      </div>
+    </div>
+
+    <div id="plot-view" style="display:none; flex:1; flex-direction:column; min-height:0;">
+      <div class="plot-toolbar">
+        <button class="toolbar-btn" id="stats-btn">📊 Stats & Analysis</button>
+        <button class="toolbar-btn" id="qc-btn">✓ Log QC and Coverage Report</button>
+        <button class="toolbar-btn" id="tops-qc-btn">🎯 Formation Tops QC</button>
+        <button class="toolbar-btn" id="export-btn">⬇️ Export</button>
+        <span style="border-left:1px solid var(--border);height:20px;margin:0 4px;"></span>
+        <span style="font-size:10px;color:var(--muted);padding:0 4px;">V-Scale:</span>
+        <button class="toolbar-btn" id="vzoom-out-btn" title="Zoom out (decrease height)" style="padding:4px 10px;font-size:14px;font-weight:700;">−</button>
+        <span id="vzoom-label" style="font-size:10px;color:var(--blue);padding:0 4px;min-width:40px;text-align:center;">1.0×</span>
+        <button class="toolbar-btn" id="vzoom-in-btn" title="Zoom in (increase height)" style="padding:4px 10px;font-size:14px;font-weight:700;">+</button>
+        <button class="toolbar-btn" id="vzoom-reset-btn" title="Reset vertical scale" style="font-size:10px;padding:4px 8px;">Reset</button>
+        <span style="font-size:9px;color:var(--muted);padding-left:4px;">Ctrl+Scroll to zoom</span>
+      </div>
+      <div class="plot-container">
+        <div class="plot-scroll" id="plot-scroll"><div id="pw"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="tt" class="tt"></div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Metadata Editor -->
+<div class="modal-overlay" id="metadata-modal">
+  <div class="modal-content" style="width:600px;">
+    <div class="modal-header">
+      <h2>Edit Well Metadata</h2>
+      <button class="modal-close" onclick="closeModal('metadata-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Well Name</label>
+        <input class="form-input" type="text" id="meta-well" placeholder="Well name">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Company</label>
+          <input class="form-input" type="text" id="meta-comp" placeholder="Company">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Field</label>
+          <input class="form-input" type="text" id="meta-fld" placeholder="Field">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <input class="form-input" type="text" id="meta-loc" placeholder="Location">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" type="text" id="meta-date" placeholder="Date">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Service Company</label>
+          <input class="form-input" type="text" id="meta-srvc" placeholder="Service Company">
+        </div>
+        <div class="form-group">
+          <label class="form-label">UWI / API</label>
+          <input class="form-input" type="text" id="meta-uwi" placeholder="UWI / API">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('metadata-modal')">Cancel</button>
+      <button class="btn btn-blue" onclick="saveMetadata()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Formation Manager -->
+<div class="modal-overlay" id="formations-modal">
+  <div class="modal-content" style="width:500px;">
+    <div class="modal-header">
+      <h2>Add Formation</h2>
+      <button class="modal-close" onclick="closeModal('formations-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Formation Name</label>
+        <input class="form-input" type="text" id="form-name" placeholder="e.g., Ranger Formation">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Top Depth</label>
+          <input class="form-input" type="number" id="form-top" step="any" placeholder="Top depth">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Base Depth</label>
+          <input class="form-input" type="number" id="form-base" step="any" placeholder="Base depth">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <input class="form-input" type="color" id="form-color" value="#4caf50" style="height:40px; padding:2px; cursor:pointer;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('formations-modal')">Cancel</button>
+      <button class="btn btn-blue" onclick="addFormation()">Add Formation</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV Import -->
+<div class="modal-overlay" id="csv-import-modal">
+  <div class="modal-content" style="width:550px;">
+    <div class="modal-header">
+      <h2>Import Formations from CSV</h2>
+      <button class="modal-close" onclick="closeModal('csv-import-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted); font-size:11px; margin-bottom:12px;">CSV format: <b>Well_Name, Formation_Name, Top_Depth, Base_Depth</b> (one per line)<br>Optional 5th column: Color (hex or CSS name). Formations are assigned to matching wells automatically.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="btn btn-ghost btn-small" onclick="document.getElementById('form-csv-file').click()">📂 Load CSV File</button>
+        <input type="file" id="form-csv-file" accept=".csv,.txt,.dat" style="display:none">
+        <span id="form-csv-fname" style="font-size:10px;color:var(--muted);align-self:center;"></span>
+      </div>
+      <textarea id="csv-text" class="form-input" style="height:180px; font-family:monospace; font-size:10px;" placeholder="WILDCAT-1, Sandstone A, 1000, 1050&#10;WILDCAT-1, Shale B, 1050, 1100&#10;F03-4, Limestone C, 2000, 2080"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('csv-import-modal')">Cancel</button>
+      <button class="btn btn-blue" onclick="importFormationsCSV()">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zone Definition Modal -->
+<div class="modal-overlay" id="zone-modal">
+  <div class="modal-content" style="width:500px;">
+    <div class="modal-header">
+      <h2 id="zone-modal-title">Define Zone</h2>
+      <button class="modal-close" onclick="closeModal('zone-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted); font-size:11px; margin-bottom:12px;">A zone is a depth interval between two formation tops, filled with a chosen color across all well tracks.</p>
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin-bottom:10px;">
+        <label style="font-size:12px;font-weight:600;">Zone name:</label>
+        <input type="text" id="zone-name" class="form-input" placeholder="e.g., Reservoir A">
+        <label style="font-size:12px;font-weight:600;">Top formation:</label>
+        <select id="zone-top-form" class="form-input" style="padding:6px;"></select>
+        <label style="font-size:12px;font-weight:600;">Base formation:</label>
+        <select id="zone-base-form" class="form-input" style="padding:6px;"></select>
+        <label style="font-size:12px;font-weight:600;">Fill color:</label>
+        <input type="color" id="zone-color" value="#FFD54F" style="width:60px;height:32px;border:1px solid var(--border);border-radius:4px;background:var(--card);cursor:pointer;">
+        <label style="font-size:12px;font-weight:600;">Opacity:</label>
+        <input type="range" id="zone-opacity" min="10" max="80" value="35" style="width:100%;">
+      </div>
+      <p style="color:var(--muted); font-size:10px;"><b>Note:</b> The zone will fill between the two selected formation tops in each well that contains both formations. Each well uses its own actual formation depths.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('zone-modal')">Cancel</button>
+      <button class="btn btn-blue" onclick="saveZone()">Save Zone</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats & Analysis -->
+<!-- Stats & Analysis (Floating Panel) -->
+<div class="float-panel" id="stats-panel" style="top:50px;right:40px;left:auto;width:880px;">
+  <div class="float-panel-header" id="stats-panel-drag">
+    <h2>Statistics & Analysis</h2>
+    <div class="float-panel-toolbar">
+      <button onclick="exportStatsPng()" title="Export current view as PNG">📷 PNG</button>
+      <button onclick="closeStatsPanel()" title="Close" style="font-size:16px;padding:2px 6px;">×</button>
+    </div>
+  </div>
+  <div class="float-panel-body">
+    <!-- Well selector row -->
+    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+      <label style="font-size:13px;font-weight:700;color:var(--muted);">Wells:</label>
+      <div id="stats-well-checks" style="display:flex;gap:10px;flex-wrap:wrap;font-size:13px;font-weight:600;"></div>
+    </div>
+    <div class="tabs" id="stats-tabs">
+      <button class="tab active" onclick="switchStatsTab('stats', this)">Statistics</button>
+      <button class="tab" onclick="switchStatsTab('histogram', this)">Histogram</button>
+      <button class="tab" onclick="switchStatsTab('crossplot', this)">Crossplot</button>
+    </div>
+    <div id="stats-tab-stats" class="tab-content active" style="max-height:450px; overflow-y:auto;"></div>
+    <div id="stats-tab-histogram" class="tab-content">
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
+        <label style="color:var(--muted);font-size:13px;font-weight:700;">Curve:</label>
+        <select id="hist-curve-sel" onchange="renderHistogram()" style="flex:1;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;"></select>
+        <label style="color:var(--muted);font-size:13px;font-weight:700;">Bins:</label>
+        <input type="number" id="hist-bins" value="20" min="5" max="100" style="width:70px;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;" onchange="renderHistogram()">
+      </div>
+      <div id="hist-chart" style="background:#fff;border-radius:6px;overflow:hidden;"></div>
+    </div>
+    <div id="stats-tab-crossplot" class="tab-content">
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">
+        <label style="color:var(--muted);font-size:13px;font-weight:700;">X:</label>
+        <select id="xplot-x" onchange="renderCrossplot()" style="flex:1;min-width:90px;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;"></select>
+        <label style="color:var(--muted);font-size:13px;font-weight:700;">Y:</label>
+        <select id="xplot-y" onchange="renderCrossplot()" style="flex:1;min-width:90px;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;"></select>
+        <label style="color:var(--muted);font-size:13px;font-weight:700;">Color:</label>
+        <select id="xplot-color" onchange="renderCrossplot()" style="flex:1;min-width:90px;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;"></select>
+      </div>
+      <div id="xplot-chart" style="background:#fff;border-radius:6px;overflow:hidden;"></div>
+      <div id="xplot-info" style="margin-top:10px;font-size:13px;color:var(--muted);font-weight:600;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- QC Report (Floating Panel) -->
+<div class="float-panel" id="qc-panel" style="top:60px;left:120px;width:850px;">
+  <div class="float-panel-header" id="qc-panel-drag">
+    <h2>Log QC and Coverage Report</h2>
+    <div class="float-panel-toolbar">
+      <button onclick="exportQCPng()" title="Export as PNG">📷 PNG</button>
+      <button onclick="closeQCPanel()" title="Close" style="font-size:16px;padding:2px 6px;">×</button>
+    </div>
+  </div>
+  <div class="float-panel-body" id="qc-body"></div>
+</div>
+
+<!-- Formation Tops QC Report (Floating Panel) -->
+<div class="float-panel" id="tops-qc-panel" style="top:80px;left:180px;width:920px;">
+  <div class="float-panel-header" id="tops-qc-panel-drag">
+    <h2>🎯 Formation Tops QC Report</h2>
+    <div class="float-panel-toolbar">
+      <button onclick="exportTopsQCPng()" title="Export matrix as PNG">📷 PNG</button>
+      <button onclick="exportTopsQCCsv()" title="Export as CSV">📄 CSV</button>
+      <button onclick="closeTopsQCPanel()" title="Close" style="font-size:16px;padding:2px 6px;">×</button>
+    </div>
+  </div>
+  <div class="float-panel-body" id="tops-qc-body"></div>
+</div>
+
+<!-- Export Menu -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-content" style="width:400px;">
+    <div class="modal-header">
+      <h2>Export Options</h2>
+      <button class="modal-close" onclick="closeModal('export-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="exportPlotPNG()">🖼️ Plot as PNG</button>
+        <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="exportPlotSVG()">📐 Plot as SVG</button>
+        <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="exportCurrentCSV()">📄 Current Well CSV</button>
+        <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="exportAllWellsCSV()">📊 All Wells CSV</button>
+        <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="exportCurrentLAS()">🛢️ Current Well LAS 2.0</button>
+        <button class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="exportPDF()">📕 PDF Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+// 1. SCALE DETERMINATION
+// ══════════════════════════════════════════════════════════════
+const RES_EXACT = new Set([
+  'ILD','ILM','ILS','ILDA','ILMA','ILSA','RILM','RILD','RILS','DIL','DILN','DILB',
+  'LLD','LLS','RLLD','RLLS','LL3','LL7','LL8',
+  'MSFL','MSFLA','SFL','SFLA','SFLS','SFR','RSFL','RMSFL',
+  'RT','RXO','RS','RM','RD','RW','RMUD','RMUF','RMCC','RANN','RINF',
+  'AT10','AT20','AT30','AT60','AT90',
+  'AHT10','AHT20','AHT30','AHT60','AHT90',
+  'RLA0','RLA1','RLA2','RLA3','RLA4','RLA5',
+  'HDRS','HMRS','HARS','HDRD','HMRD','HDRM',
+  'P16H','P28H','P34H','P40H','P16L','P28L','P34L','P40L',
+  'M2R1','M2R2','M2R3','M2R6','M2R9','M2L1','M2L2','M2L3','M2L6','M2L9',
+  'RES','RESD','RESS','RESM','RESI','RTRUE','RINV',
+  'AO10','AO20','AO30','AO60','AO90',
+]);
+const RHO_EXCL = ['RHOB','RHOZ','RHOC','RHOG','RHOP','RHOFL'];
+
+function normMnem(m) { return m.toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+
+function isLogScale(mnem) {
+  const m = normMnem(mnem);
+  if (RES_EXACT.has(m)) return true;
+  if (/^(ILD|ILM|ILS|LLD|LLS|MSFL|SFL|DIL)/.test(m)) return true;
+  if (/^(AT|AHT|AO)\d+$/.test(m)) return true;
+  if (/^RLA\d$/.test(m)) return true;
+  if (/^M2[RL]\d/.test(m)) return true;
+  if (RHO_EXCL.some(ex => m.startsWith(ex))) return false;
+  if (/^R[A-Z0-9]{1,4}$/.test(m)) return true;
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 2. LAS PARSER (LAS 1.2/2.0 with WRAP YES/NO)
+// ══════════════════════════════════════════════════════════════
+function parseLAS(raw) {
+  const las = { version:{}, well:{}, curves:[], params:{}, data:{},
+                wrap:false, nullValue:-9999.25, depthUnit:'m', ver:'2.0' };
+  const lines = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  let section = null;
+  const ascLines = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || line[0] === '#') continue;
+    if (line[0] === '~') {
+      const ch = (line[1]||'').toUpperCase();
+      if      (ch==='V') section='V';
+      else if (ch==='W') section='W';
+      else if (ch==='C') section='C';
+      else if (ch==='P') section='P';
+      else if (ch==='A') section='A';
+      else               section='O';
+      continue;
+    }
+    if (section==='A') { ascLines.push(line); continue; }
+    if (!section) continue;
+
+    const ci = line.indexOf(':');
+    if (ci===-1) continue;
+    const left = line.slice(0,ci);
+    const desc = line.slice(ci+1).trim();
+    const di   = left.indexOf('.');
+    if (di===-1) continue;
+    const mnem = left.slice(0,di).trim().toUpperCase();
+    if (!mnem) continue;
+    const afterDot = left.slice(di+1);
+    const mm   = afterDot.match(/^(\S*)\s*(.*)/);
+    const unit  = mm ? mm[1].trim() : '';
+    const value = mm ? mm[2].trim() : '';
+    const info  = { mnem, unit, value, desc };
+
+    if      (section==='V') las.version[mnem]=info;
+    else if (section==='W') las.well[mnem]=info;
+    else if (section==='C') las.curves.push(info);
+    else if (section==='P') las.params[mnem]=info;
+
+    if (section==='V' && mnem==='VERS') las.ver       = value;
+    if (section==='V' && mnem==='WRAP') las.wrap       = value.toUpperCase()==='YES';
+    if (section==='W' && mnem==='NULL') las.nullValue  = parseFloat(value)|| -9999.25;
+    if (section==='W' && mnem==='STRT') las.depthUnit  = unit;
+  }
+  _parseAscii(las, ascLines);
+  las._raw = raw;
+  return las;
+}
+
+function _parseAscii(las, lines) {
+  const { curves, nullValue, wrap } = las;
+  if (!curves.length || !lines.length) return;
+  const n = curves.length;
+  const arrs = curves.map(()=>[]);
+  const NULL_TOL = Math.abs(nullValue)*0.001+0.5;
+  function addSample(tokens) {
+    for (let j=0; j<n && j<tokens.length; j++) {
+      const v = parseFloat(tokens[j]);
+      arrs[j].push(isNaN(v)||Math.abs(v-nullValue)<NULL_TOL ? null : v);
+    }
+  }
+  if (!wrap) {
+    for (const line of lines) {
+      const tokens = line.split(/\s+/).filter(Boolean);
+      if (tokens.length>=2) addSample(tokens);
+    }
+  } else {
+    let buf=[];
+    for (const line of lines) {
+      buf.push(...line.split(/\s+/).filter(Boolean));
+      while (buf.length>=n) addSample(buf.splice(0,n));
+    }
+  }
+  for (let j=0; j<n; j++) {
+    las.data[curves[j].mnem] = { unit:curves[j].unit, values:arrs[j], desc:curves[j].desc };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 3. GLOBAL STATE & CONSTANTS
+// ══════════════════════════════════════════════════════════════
+const wellRegistry = new Map(); // wellId → { name, fileName, las, depthKey, curveSettings, selected, formations }
+const COLORS = [
+  '#e05c6b','#5b9de8','#4caf50','#ff9800','#ab7be8',
+  '#26c6da','#d4a017','#ef5350','#66bb6a','#ff7043',
+  '#29b6f6','#9ccc65','#ec407a','#7e57c2','#26a69a',
+];
+let currentWellId = null;
+let allSel = false;
+let showFormationTops = true;
+
+// ══════════════════════════════════════════════════════════════
+// 4. FILE HANDLING
+// ══════════════════════════════════════════════════════════════
+const dz = document.getElementById('dz');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('click', ()=>fi.click());
+fi.addEventListener('change', e=>{
+  if (e.target.files.length) {
+    for (const file of e.target.files) readFile(file);
+  }
+});
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('over'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('over');
+  if (e.dataTransfer.files.length) {
+    for (const f of e.dataTransfer.files) readFile(f);
+  }
+});
+
+function readFile(file) {
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const las = parseLAS(ev.target.result);
+      const wellId = 'well_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+      const DNAMES = ['DEPT','DEPTH','MD','TVD','TVDSS','TDEP','TWT','TIME'];
+      const depthKey = las.curves.find(c => DNAMES.includes(c.mnem.toUpperCase()))?.mnem || las.curves[0]?.mnem || 'DEPT';
+
+      const wellName = las.well.WELL?.value?.trim() || file.name.replace(/\.(las|txt)$/i,'');
+      wellRegistry.set(wellId, {
+        name: wellName,
+        fileName: file.name,
+        las: las,
+        depthKey: depthKey,
+        curveSettings: {},
+        selected: wellRegistry.size === 0,
+        visible: true,
+        formations: []
+      });
+
+      if (!currentWellId) currentWellId = wellId;
+      updateWellList();
+      if (wellRegistry.get(wellId)?.selected) selectWell(wellId);
+    } catch(err) {
+      alert('Error parsing LAS file:\n'+err.message);
+      console.error(err);
+    }
+  };
+  r.onerror = ()=>alert('Could not read file.');
+  r.readAsText(file);
+}
+
+function updateWellList() {
+  const cnt = wellRegistry.size;
+  const wellsSection = document.getElementById('wells-section');
+  const wellList = document.getElementById('well-list');
+  wellsSection.style.display = cnt > 0 ? 'block' : 'none';
+  document.getElementById('well-count').textContent = cnt;
+
+  wellList.innerHTML = '';
+  wellRegistry.forEach((w, wid)=>{
+    const item = document.createElement('div');
+    item.className = 'well-item' + (w.selected ? ' selected' : '');
+    const isVis = w.visible !== false;
+    item.style.opacity = isVis ? '1' : '0.45';
+    item.innerHTML = `
+      <div class="well-item-name" onclick="selectWell('${wid}')">${w.name}</div>
+      <div class="well-item-btns">
+        <button class="well-btn" onclick="toggleWellVisibility('${wid}')" title="Toggle visibility" style="opacity:${isVis ? 1 : 0.4}">${isVis ? '👁️' : '🚫'}</button>
+        <button class="well-btn" onclick="removeWell('${wid}')" title="Remove well">✕</button>
+      </div>
+    `;
+    wellList.appendChild(item);
+  });
+
+  if (cnt === 0) {
+    currentWellId = null;
+    document.getElementById('well-info-section').style.display = 'none';
+    document.getElementById('formations-section').style.display = 'none';
+    document.getElementById('depth-section').style.display = 'none';
+    document.getElementById('curves-section').style.display = 'none';
+    document.getElementById('sb-foot').style.display = 'none';
+  }
+}
+
+function selectWell(wid) {
+  wellRegistry.forEach(w => w.selected = false);
+  wellRegistry.get(wid).selected = true;
+  currentWellId = wid;
+  updateWellList();
+  populateWellInfo();
+}
+
+function removeWell(wid) {
+  wellRegistry.delete(wid);
+  if (currentWellId === wid) {
+    currentWellId = wellRegistry.keys().next().value || null;
+  }
+  updateWellList();
+  if (currentWellId) populateWellInfo();
+}
+
+function toggleWellVisibility(wid) {
+  const w = wellRegistry.get(wid);
+  w.visible = w.visible === false ? true : false;
+  updateWellList();
+  plotLogs();
+}
+
+document.getElementById('clear-wells-btn').addEventListener('click', ()=>{
+  if (confirm('Clear all wells?')) {
+    wellRegistry.clear();
+    currentWellId = null;
+    updateWellList();
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// 5. WELL INFO & METADATA
+// ══════════════════════════════════════════════════════════════
+function populateWellInfo() {
+  if (!currentWellId) return;
+  const well = wellRegistry.get(currentWellId);
+  const las = well.las;
+
+  document.getElementById('well-info-section').style.display = 'block';
+  document.getElementById('formations-section').style.display = 'block';
+  document.getElementById('zones-section').style.display = 'block';
+  document.getElementById('depth-section').style.display = 'block';
+  document.getElementById('curves-section').style.display = 'block';
+  document.getElementById('sb-foot').style.display = 'flex';
+
+  const wellInfo = document.getElementById('well-info');
+  const wellName = las.well.WELL?.value || 'Unknown';
+  const comp = las.well.COMP?.value || '';
+  const fld = las.well.FLD?.value || '';
+  const loc = las.well.LOC?.value || '';
+  const srvc = las.well.SRVC?.value || '';
+  const date = las.well.DATE?.value || '';
+  const uwi = las.well.UWI?.value || '';
+
+  wellInfo.innerHTML = `
+    <div class="well-row"><span class="well-label">WELL</span><span class="well-value">${wellName}</span></div>
+    ${comp ? `<div class="well-row"><span class="well-label">COMPANY</span><span class="well-value">${comp}</span></div>` : ''}
+    ${fld ? `<div class="well-row"><span class="well-label">FIELD</span><span class="well-value">${fld}</span></div>` : ''}
+    ${loc ? `<div class="well-row"><span class="well-label">LOCATION</span><span class="well-value">${loc}</span></div>` : ''}
+    ${date ? `<div class="well-row"><span class="well-label">DATE</span><span class="well-value">${date}</span></div>` : ''}
+    ${uwi ? `<div class="well-row"><span class="well-label">UWI/API</span><span class="well-value">${uwi}</span></div>` : ''}
+  `;
+
+  const depthUnit = las.depthUnit || 'm';
+  document.getElementById('depth-unit-lbl').textContent = `(${depthUnit})`;
+
+  const depthArr = las.data[well.depthKey]?.values || [];
+  const validDepths = depthArr.filter(d => d !== null && isFinite(d));
+  if (validDepths.length) {
+    const minD = Math.min(...validDepths);
+    const maxD = Math.max(...validDepths);
+    document.getElementById('d-top').value = minD.toFixed(1);
+    document.getElementById('d-base').value = maxD.toFixed(1);
+  }
+
+  populateCurveList();
+  populateFormationList();
+  renderZonesList();
+}
+
+function populateCurveList() {
+  if (!currentWellId) return;
+  const well = wellRegistry.get(currentWellId);
+  const las = well.las;
+
+  const cList = document.getElementById('c-list');
+  const cSearch = document.getElementById('c-search');
+  const query = (cSearch.value || '').toLowerCase();
+
+  cList.innerHTML = '';
+  const DNAMES = ['DEPT','DEPTH','MD','TVD','TVDSS','TDEP','TWT','TIME'];
+
+  las.curves.forEach(curve => {
+    if (DNAMES.includes(curve.mnem.toUpperCase())) return;
+    if (query && !curve.mnem.toLowerCase().includes(query)) return;
+
+    const s = well.curveSettings[curve.mnem] || {
+      scale: isLogScale(curve.mnem) ? 'log' : 'linear',
+      reversed: false,
+      fillEnabled: false,
+      fillThreshold: null,
+      fillColor: '#ffeb3b',
+      fillSide: 'above'
+    };
+
+    const row = document.createElement('div');
+    row.className = 'c-row';
+    row.innerHTML = `
+      <input type="checkbox" data-mnem="${curve.mnem}">
+      <span class="c-row-name">${curve.mnem}</span>
+      <span class="c-row-unit">${curve.unit || ''}</span>
+      <input type="number" class="c-row-input" id="trk_${curve.mnem}" value="1" min="1" max="10" style="width:100%;">
+      <button class="well-btn" id="scl_${curve.mnem}" title="Scale: ${s.scale}" style="font-size:10px;">${s.scale==='log'?'LOG':'LIN'}</button>
+      <button class="well-btn" id="rev_${curve.mnem}" title="Direction: ${s.reversed?'reversed':'normal'}" style="font-size:12px;">${s.reversed?'←':'→'}</button>
+    `;
+    cList.appendChild(row);
+
+    document.getElementById(`scl_${curve.mnem}`).addEventListener('click', ()=>{
+      s.scale = s.scale === 'log' ? 'linear' : 'log';
+      well.curveSettings[curve.mnem] = s;
+      document.getElementById(`scl_${curve.mnem}`).textContent = s.scale === 'log' ? 'LOG' : 'LIN';
+    });
+
+    document.getElementById(`rev_${curve.mnem}`).addEventListener('click', ()=>{
+      s.reversed = !s.reversed;
+      well.curveSettings[curve.mnem] = s;
+      document.getElementById(`rev_${curve.mnem}`).textContent = s.reversed ? '←' : '→';
+    });
+  });
+
+  updCount();
+}
+
+function updCount() {
+  const all = document.querySelectorAll('#c-list input[type=checkbox]').length;
+  const sel = document.querySelectorAll('#c-list input[type=checkbox]:checked').length;
+  document.getElementById('c-count').textContent = sel ? `${sel} / ${all}` : `${all} curves`;
+}
+
+function toggleAll() {
+  allSel = !allSel;
+  document.querySelectorAll('#c-list input[type=checkbox]').forEach(c => c.checked = allSel);
+  document.getElementById('sel-all-btn').textContent = allSel ? 'Deselect All' : 'Select All';
+  updCount();
+}
+
+document.getElementById('c-search').addEventListener('input', populateCurveList);
+
+// ══════════════════════════════════════════════════════════════
+// 6. METADATA EDITOR
+// ══════════════════════════════════════════════════════════════
+document.getElementById('metadata-edit-btn').addEventListener('click', ()=>{
+  if (!currentWellId) return;
+  const well = wellRegistry.get(currentWellId).las.well;
+  document.getElementById('meta-well').value = well.WELL?.value || '';
+  document.getElementById('meta-comp').value = well.COMP?.value || '';
+  document.getElementById('meta-fld').value = well.FLD?.value || '';
+  document.getElementById('meta-loc').value = well.LOC?.value || '';
+  document.getElementById('meta-date').value = well.DATE?.value || '';
+  document.getElementById('meta-srvc').value = well.SRVC?.value || '';
+  document.getElementById('meta-uwi').value = well.UWI?.value || '';
+  openModal('metadata-modal');
+});
+
+function saveMetadata() {
+  if (!currentWellId) return;
+  const well = wellRegistry.get(currentWellId).las.well;
+  well.WELL = { mnem:'WELL', unit:'', value:document.getElementById('meta-well').value, desc:'' };
+  well.COMP = { mnem:'COMP', unit:'', value:document.getElementById('meta-comp').value, desc:'' };
+  well.FLD = { mnem:'FLD', unit:'', value:document.getElementById('meta-fld').value, desc:'' };
+  well.LOC = { mnem:'LOC', unit:'', value:document.getElementById('meta-loc').value, desc:'' };
+  well.DATE = { mnem:'DATE', unit:'', value:document.getElementById('meta-date').value, desc:'' };
+  well.SRVC = { mnem:'SRVC', unit:'', value:document.getElementById('meta-srvc').value, desc:'' };
+  well.UWI = { mnem:'UWI', unit:'', value:document.getElementById('meta-uwi').value, desc:'' };
+  populateWellInfo();
+  closeModal('metadata-modal');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 7. FORMATIONS
+// ══════════════════════════════════════════════════════════════
+function populateFormationList() {
+  if (!currentWellId) return;
+  const forms = wellRegistry.get(currentWellId).formations;
+  const list = document.querySelector('#formation-list');
+  list.innerHTML = '';
+  forms.forEach((f, i)=>{
+    const item = document.createElement('div');
+    item.className = 'formation-item';
+    item.innerHTML = `
+      <input type="color" class="formation-color" value="${f.color}" onchange="updateFormationColor(${i}, this.value)">
+      <div class="formation-info">
+        <div class="formation-name">${f.name}</div>
+        <div class="formation-depths">${f.topD.toFixed(1)} – ${f.baseD.toFixed(1)}</div>
+      </div>
+      <div class="formation-btns">
+        <button class="well-btn" onclick="removeFormation(${i})">✕</button>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('formations-add-btn').addEventListener('click', ()=>{
+  document.getElementById('form-name').value = '';
+  document.getElementById('form-top').value = '';
+  document.getElementById('form-base').value = '';
+  document.getElementById('form-color').value = '#4caf50';
+  openModal('formations-modal');
+});
+
+document.getElementById('formations-csv-btn').addEventListener('click', ()=>{
+  document.getElementById('csv-text').value = '';
+  openModal('csv-import-modal');
+});
+
+function addFormation() {
+  if (!currentWellId) return;
+  const name = document.getElementById('form-name').value.trim();
+  const topD = parseFloat(document.getElementById('form-top').value);
+  const baseD = parseFloat(document.getElementById('form-base').value);
+  const color = document.getElementById('form-color').value;
+
+  if (!name || !isFinite(topD) || !isFinite(baseD) || topD >= baseD) {
+    alert('Please fill all fields with valid values (Top < Base)');
+    return;
+  }
+
+  wellRegistry.get(currentWellId).formations.push({ name, topD, baseD, color });
+  populateFormationList();
+  closeModal('formations-modal');
+}
+
+function importFormationsCSV() {
+  const csv = document.getElementById('csv-text').value.trim();
+  if (!csv) return;
+
+  // Build a lookup: lowercased well name → wellId
+  const wellLookup = new Map();
+  wellRegistry.forEach((w, wid) => {
+    wellLookup.set(w.name.toLowerCase().trim(), wid);
+    // Also index by filename without extension
+    const fn = w.fileName.replace(/\.(las|txt)$/i, '').toLowerCase().trim();
+    if (!wellLookup.has(fn)) wellLookup.set(fn, wid);
+  });
+
+  // Collect formations per well
+  const formsByWell = new Map();
+  const FORM_COLORS = ['#d32f2f','#1565c0','#2e7d32','#6a1b9a','#e65100','#00838f','#c62828','#283593','#1b5e20','#ad1457','#4e342e','#f57f17'];
+  let cIdx = 0;
+
+  csv.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line || line.startsWith('#') || line.toLowerCase().startsWith('well')) return; // skip empty/comment/header
+
+    const parts = line.split(',').map(s => s.trim());
+    if (parts.length < 4) return;
+
+    const [wellName, formName, topStr, baseStr, colorStr] = parts;
+    const topD = parseFloat(topStr);
+    const baseD = parseFloat(baseStr);
+    if (!wellName || !formName || !isFinite(topD) || !isFinite(baseD)) return;
+
+    // Find matching well (case-insensitive, partial match)
+    let matchedWid = wellLookup.get(wellName.toLowerCase());
+    if (!matchedWid) {
+      // Try partial match
+      for (const [key, wid] of wellLookup) {
+        if (key.includes(wellName.toLowerCase()) || wellName.toLowerCase().includes(key)) {
+          matchedWid = wid;
+          break;
+        }
+      }
+    }
+    if (!matchedWid) return; // no matching well found
+
+    if (!formsByWell.has(matchedWid)) formsByWell.set(matchedWid, []);
+    formsByWell.get(matchedWid).push({
+      name: formName,
+      topD,
+      baseD,
+      color: colorStr || FORM_COLORS[cIdx++ % FORM_COLORS.length]
+    });
+  });
+
+  if (!formsByWell.size) {
+    alert('No formations matched any loaded wells. Check well names.');
+    return;
+  }
+
+  // Assign to wells
+  let count = 0;
+  formsByWell.forEach((forms, wid) => {
+    const w = wellRegistry.get(wid);
+    w.formations = w.formations.concat(forms);
+    count += forms.length;
+  });
+
+  populateFormationList();
+  closeModal('csv-import-modal');
+  alert(`Imported ${count} formation(s) across ${formsByWell.size} well(s).`);
+}
+
+function updateFormationColor(i, color) {
+  wellRegistry.get(currentWellId).formations[i].color = color;
+  plotLogs(); // re-render with new color
+}
+
+function removeFormation(i) {
+  wellRegistry.get(currentWellId).formations.splice(i, 1);
+  populateFormationList();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 8. MAIN PLOT FUNCTION
+// ══════════════════════════════════════════════════════════════
+function plotLogs() {
+  // Gather visible wells
+  const visibleWells = [];
+  wellRegistry.forEach((w, wid) => {
+    if (w.visible !== false) visibleWells.push({ wid, well: w });
+  });
+  if (!visibleWells.length) {
+    if (!currentWellId) return;
+    // Fallback: if none visible, show current well
+    const cw = wellRegistry.get(currentWellId);
+    if (cw) visibleWells.push({ wid: currentWellId, well: cw });
+    else return;
+  }
+
+  const selected = [...document.querySelectorAll('#c-list input[type=checkbox]:checked')]
+    .map(c => c.dataset.mnem);
+  if (!selected.length) { alert('Select at least one curve to plot.'); return; }
+
+  const topV = parseFloat(document.getElementById('d-top').value);
+  const baseV = parseFloat(document.getElementById('d-base').value);
+  if (isNaN(topV) || isNaN(baseV) || topV >= baseV) {
+    alert('Please enter valid depth range (Top < Base).');
+    return;
+  }
+
+  const PLOT_H = Math.max(300, Math.min(10000, parseInt(document.getElementById('ph').value) || 900));
+
+  // Use current well for depth reference & curve settings
+  const refWell = wellRegistry.get(currentWellId) || visibleWells[0].well;
+  const refLas = refWell.las;
+  const refDepthArr = refLas.data[refWell.depthKey]?.values;
+  if (!refDepthArr) { alert('Depth curve not found.'); return; }
+
+  const refIndices = [];
+  for (let i = 0; i < refDepthArr.length; i++) {
+    const d = refDepthArr[i];
+    if (d !== null && d >= topV && d <= baseV) refIndices.push(i);
+  }
+  if (!refIndices.length) { alert('No data in selected depth range.'); return; }
+
+  const refDepths = refIndices.map(i => refDepthArr[i]);
+  const depthMin = Math.min(...refDepths);
+  const depthMax = Math.max(...refDepths);
+
+  // Build track grouping from checkboxes (respects track# assignments)
+  const trackMap = new Map();
+  let colorIdx = 0;
+  for (const mnem of selected) {
+    const s = refWell.curveSettings[mnem] || {
+      scale: isLogScale(mnem) ? 'log' : 'linear',
+      reversed: false,
+      fillEnabled: false,
+      fillThreshold: null,
+      fillColor: '#ffeb3b',
+      fillSide: 'above'
+    };
+    const trackNum = parseInt(document.getElementById(`trk_${mnem}`)?.value) || 1;
+    const color = COLORS[colorIdx++ % COLORS.length];
+    if (!trackMap.has(trackNum)) trackMap.set(trackNum, []);
+    trackMap.get(trackNum).push({
+      mnem, color,
+      scale: s.scale,
+      reversed: s.reversed,
+      fillEnabled: s.fillEnabled,
+      fillThreshold: s.fillThreshold,
+      fillColor: s.fillColor,
+      fillSide: s.fillSide
+    });
+  }
+  const tracks = [...trackMap.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([tNum, curves]) => ({ tNum, curves }));
+
+  // Layout constants
+  const WELL_NAME_H = 22;
+  const ROW_H = 36;
+  const maxCurvesPerTrack = Math.max(...tracks.map(t => t.curves.length));
+  const HDR_H = Math.max(65, maxCurvesPerTrack * ROW_H + 14) + WELL_NAME_H;
+  const FOOT_H = 30;
+  const DEPTH_W = 76;
+  const TRACK_W = 160;
+  const SEP = 1;
+  const WELL_GAP = 4;
+  const numTracks = tracks.length;
+  const wellBlockW = numTracks * (TRACK_W + SEP);
+
+  // Extra width for formation labels on right side
+  const hasFormations = visibleWells.some(({ well }) => showFormationTops && well.formations.length);
+  const FORM_LABEL_W = hasFormations ? 130 : 0;
+  const totalW = DEPTH_W + visibleWells.length * (wellBlockW + WELL_GAP) + FORM_LABEL_W;
+  const totalH = HDR_H + PLOT_H + FOOT_H;
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('plot-view').style.display = 'flex';
+  const pw = document.getElementById('pw');
+  pw.innerHTML = '';
+
+  const svg = d3.select(pw).append('svg')
+    .attr('width', totalW).attr('height', totalH)
+    .attr('font-family', "'Segoe UI', system-ui, sans-serif");
+
+  svg.append('rect').attr('width', totalW).attr('height', totalH).attr('fill', '#fff');
+
+  const yScale = d3.scaleLinear()
+    .domain([depthMin, depthMax])
+    .range([HDR_H, HDR_H + PLOT_H]);
+
+
+  const depthSpan = depthMax - depthMin;
+  const majStep = niceStep(depthSpan / 12);
+  const minStep = majStep / 5;
+  const majTicks = tickArr(depthMin, depthMax, majStep);
+  const minTicks = tickArr(depthMin, depthMax, minStep);
+
+  // Horizontal grid lines
+  minTicks.forEach(t => {
+    svg.append('line').attr('x1', DEPTH_W).attr('y1', yScale(t))
+      .attr('x2', totalW).attr('y2', yScale(t))
+      .attr('stroke', '#f2f2f2').attr('stroke-width', 0.5);
+  });
+  majTicks.forEach(t => {
+    svg.append('line').attr('x1', DEPTH_W).attr('y1', yScale(t))
+      .attr('x2', totalW).attr('y2', yScale(t))
+      .attr('stroke', '#dedede').attr('stroke-width', 0.8);
+  });
+
+  // Draw depth track
+  drawDepthTrack(svg, yScale, depthMin, depthMax, majTicks, minTicks,
+    DEPTH_W, HDR_H, PLOT_H, FOOT_H, refLas.depthUnit || 'm');
+
+  const allCurveInfos = [];
+  const WELL_COLORS = ['#1e88e5', '#43a047', '#e53935', '#8e24aa', '#f4511e', '#00acc1', '#d81b60', '#6d4c41'];
+
+  // Iterate each visible well
+  visibleWells.forEach(({ wid, well }, wi) => {
+    const wellXOff = DEPTH_W + wi * (wellBlockW + WELL_GAP);
+    const wLas = well.las;
+    const wDepthKey = well.depthKey;
+    const wDepthArr = wLas.data[wDepthKey]?.values || [];
+
+    // Compute well-specific indices for the shared depth range
+    const wIndices = [];
+    for (let i = 0; i < wDepthArr.length; i++) {
+      const d = wDepthArr[i];
+      if (d !== null && d >= topV && d <= baseV) wIndices.push(i);
+    }
+    const wDepths = wIndices.map(i => wDepthArr[i]);
+
+    // Well name banner
+    const wellColor = WELL_COLORS[wi % WELL_COLORS.length];
+    svg.append('rect')
+      .attr('x', wellXOff).attr('y', 0)
+      .attr('width', wellBlockW).attr('height', WELL_NAME_H)
+      .attr('fill', wellColor);
+    svg.append('text')
+      .attr('x', wellXOff + wellBlockW / 2).attr('y', WELL_NAME_H / 2 + 5)
+      .attr('text-anchor', 'middle').attr('fill', '#fff')
+      .attr('font-size', 11).attr('font-weight', 700)
+      .text(well.name.length > 30 ? well.name.slice(0, 28) + '…' : well.name);
+
+    // Draw each track group for this well
+    tracks.forEach(({ tNum, curves }, ti) => {
+      const trackX = wellXOff + ti * (TRACK_W + SEP);
+
+      // Filter curves: only those this well actually has
+      const wellCurves = curves.filter(cc => !!wLas.data[cc.mnem]);
+      // All mnemonics for this track (for empty-track labeling)
+      const allMnems = curves.map(cc => cc.mnem);
+
+      if (wellCurves.length > 0 && wIndices.length > 0) {
+        // Draw track with one or more curves
+        const clipIdx = wi * 100 + ti;
+        const infos = drawTrackMulti(svg, wLas, wellCurves, wIndices, wDepths, yScale,
+          trackX, TRACK_W, HDR_H, PLOT_H, FOOT_H, ROW_H, clipIdx, WELL_NAME_H);
+        infos.forEach(inf => {
+          inf.wellName = well.name;
+          inf.wellIdx = wi;
+        });
+        allCurveInfos.push(...infos);
+      } else {
+        // Draw empty placeholder track showing all mnemonics for this track
+        drawEmptyTrack(svg, allMnems.join('/'), trackX, TRACK_W, HDR_H, PLOT_H, FOOT_H, WELL_NAME_H);
+      }
+
+      // Vertical separator between tracks
+      svg.append('line')
+        .attr('x1', trackX).attr('y1', WELL_NAME_H).attr('x2', trackX).attr('y2', totalH)
+        .attr('stroke', '#888').attr('stroke-width', ti === 0 ? 1.2 : 0.5);
+    });
+
+    // Right border of well block
+    const rightEdge = wellXOff + wellBlockW;
+    svg.append('line')
+      .attr('x1', rightEdge).attr('y1', 0).attr('x2', rightEdge).attr('y2', totalH)
+      .attr('stroke', '#888').attr('stroke-width', 1.2);
+
+  });
+
+  // ── Formation Tops Overlay (drawn LAST so lines appear on top of logs) ──
+  // Per-well: each well shows its OWN formation tops at its OWN depths
+  // Across wells: matching formation names are connected by diagonal correlation lines (Petrel style)
+  if (showFormationTops) {
+    const fShowLines = document.getElementById('form-show-lines')?.checked !== false;
+    const fShowLabels = document.getElementById('form-show-labels')?.checked !== false;
+    const fShowFill = document.getElementById('form-show-fill')?.checked !== false;
+    const fLineStyle = document.getElementById('form-line-style')?.value || 'dashed';
+    const fLineWidth = parseFloat(document.getElementById('form-line-width')?.value) || 2;
+    // Line style patterns — solid uses "none", dotted uses round caps with tight spacing for true dots
+    const dashMap = {
+      solid:  'none',
+      dashed: `${Math.max(6, fLineWidth*4)},${Math.max(3, fLineWidth*2)}`,
+      dotted: `0.1,${Math.max(4, fLineWidth*3)}`
+    };
+    const dashValue = dashMap[fLineStyle] || dashMap.dashed;
+    const lineCap   = fLineStyle === 'dotted' ? 'round' : 'butt';
+    const cr = 5; // circle marker radius
+
+    // Create an SVG group on top for formations
+    const formG = svg.append('g').attr('class', 'formation-overlay');
+
+    // Step 1: Build per-well formation records with actual screen Y positions
+    // wellForms[wi] = [{ name, key, color, topD, baseD, yTop, yBase, xStart, xEnd }, ...]
+    const wellForms = visibleWells.map(({ wid, well }, wi) => {
+      const wxOff = DEPTH_W + wi * (wellBlockW + WELL_GAP);
+      return (well.formations || []).map(form => ({
+        name: form.name,
+        key: form.name.trim().toLowerCase(),
+        color: form.color,
+        topD: form.topD,
+        baseD: form.baseD,
+        yTop: yScale(form.topD),
+        yBase: yScale(form.baseD),
+        xStart: wxOff,
+        xEnd: wxOff + wellBlockW
+      }));
+    });
+
+    // Step 2: Index formations by key across wells for connector lines and labels
+    // formIndex: key → { name, color, occurrences: [{ wi, form }] }
+    const formIndex = new Map();
+    wellForms.forEach((forms, wi) => {
+      forms.forEach(form => {
+        if (!formIndex.has(form.key)) {
+          formIndex.set(form.key, { name: form.name, color: form.color, occurrences: [] });
+        }
+        const entry = formIndex.get(form.key);
+        entry.color = form.color; // latest color wins (user edits)
+        entry.occurrences.push({ wi, form });
+      });
+    });
+
+    const leftEdgeX = 0;
+    const rightEdgeX = DEPTH_W + visibleWells.length * (wellBlockW + WELL_GAP);
+    const labelLeftX = 4;
+    const labelRightX = rightEdgeX + 6;
+
+    // Step 3: Draw user-defined ZONES — colored fill between two chosen formation tops
+    // For each zone, fill each well's block between that well's top-formation and base-formation depths.
+    // Zones form trapezoidal bands across wells (each well uses its own actual formation depths).
+    if (fShowFill && zonesRegistry.length) {
+      zonesRegistry.forEach(zone => {
+        if (zone.visible === false) return;
+        // Build per-well polygon points for this zone (trapezoidal band across wells)
+        const segments = [];
+        wellForms.forEach(forms => {
+          const top = forms.find(f => f.key === zone.topFormKey);
+          const base = forms.find(f => f.key === zone.baseFormKey);
+          if (!top || !base) return; // well missing one of the two formations — skip
+          const yA = Math.min(top.yTop, base.yTop);
+          const yB = Math.max(top.yTop, base.yTop);
+          const yAc = Math.max(HDR_H, Math.min(HDR_H + PLOT_H, yA));
+          const yBc = Math.max(HDR_H, Math.min(HDR_H + PLOT_H, yB));
+          if (yBc <= yAc) return;
+          // Per-well filled rectangle
+          formG.append('rect')
+            .attr('x', top.xStart).attr('y', yAc)
+            .attr('width', top.xEnd - top.xStart).attr('height', yBc - yAc)
+            .attr('fill', zone.color).attr('fill-opacity', zone.opacity || 0.35)
+            .attr('pointer-events', 'none');
+          segments.push({ xStart: top.xStart, xEnd: top.xEnd, yTopA: top.yTop, yTopB: base.yTop });
+        });
+        // Connector trapezoids — only between ADJACENT wells where BOTH have both formations.
+        // If any well in between is missing a formation, do NOT span across it.
+        for (let i = 0; i < wellForms.length - 1; i++) {
+          const aTop = wellForms[i].find(f => f.key === zone.topFormKey);
+          const aBase = wellForms[i].find(f => f.key === zone.baseFormKey);
+          const bTop = wellForms[i + 1].find(f => f.key === zone.topFormKey);
+          const bBase = wellForms[i + 1].find(f => f.key === zone.baseFormKey);
+          if (!aTop || !aBase || !bTop || !bBase) continue;
+          const aYA = Math.min(aTop.yTop, aBase.yTop), aYB = Math.max(aTop.yTop, aBase.yTop);
+          const bYA = Math.min(bTop.yTop, bBase.yTop), bYB = Math.max(bTop.yTop, bBase.yTop);
+          const pts = [
+            [aTop.xEnd, aYA],
+            [bTop.xStart, bYA],
+            [bTop.xStart, bYB],
+            [aTop.xEnd, aYB]
+          ];
+          formG.append('polygon')
+            .attr('points', pts.map(p => p.join(',')).join(' '))
+            .attr('fill', zone.color).attr('fill-opacity', (zone.opacity || 0.35) * 0.7)
+            .attr('pointer-events', 'none');
+        }
+      });
+    }
+
+    // Step 4: Draw diagonal CONNECTOR lines ONLY between ADJACENT wells that BOTH have the formation
+    // If a well is missing the formation, its block is NOT spanned — the connector chain is broken there.
+    if (fShowLines) {
+      formIndex.forEach(({ color, occurrences }, key) => {
+        if (occurrences.length < 2) return;
+        // Iterate adjacent well indices in visibleWells order; connect only when both have this formation
+        for (let i = 0; i < wellForms.length - 1; i++) {
+          const a = wellForms[i].find(f => f.key === key);
+          const b = wellForms[i + 1].find(f => f.key === key);
+          if (!a || !b) continue; // missing formation in one of the adjacent wells — skip connector
+          // TOP connector (between end of well A and start of well B)
+          if (a.yTop >= HDR_H && a.yTop <= HDR_H + PLOT_H &&
+              b.yTop >= HDR_H && b.yTop <= HDR_H + PLOT_H) {
+            // Shadow (uses same dash pattern so line style remains visible)
+            formG.append('line')
+              .attr('x1', a.xEnd).attr('y1', a.yTop)
+              .attr('x2', b.xStart).attr('y2', b.yTop)
+              .attr('stroke', 'rgba(0,0,0,0.35)').attr('stroke-width', fLineWidth + 2)
+              .attr('stroke-dasharray', dashValue)
+              .attr('stroke-linecap', lineCap)
+              .attr('pointer-events', 'none');
+            // Main
+            formG.append('line')
+              .attr('x1', a.xEnd).attr('y1', a.yTop)
+              .attr('x2', b.xStart).attr('y2', b.yTop)
+              .attr('stroke', color).attr('stroke-width', fLineWidth)
+              .attr('stroke-dasharray', dashValue)
+              .attr('stroke-linecap', lineCap)
+              .attr('pointer-events', 'none');
+          }
+          // BASE connector
+          if (Math.abs(a.yBase - a.yTop) > 3 && Math.abs(b.yBase - b.yTop) > 3 &&
+              a.yBase >= HDR_H && a.yBase <= HDR_H + PLOT_H &&
+              b.yBase >= HDR_H && b.yBase <= HDR_H + PLOT_H) {
+            formG.append('line')
+              .attr('x1', a.xEnd).attr('y1', a.yBase)
+              .attr('x2', b.xStart).attr('y2', b.yBase)
+              .attr('stroke', 'rgba(0,0,0,0.30)').attr('stroke-width', fLineWidth + 1)
+              .attr('stroke-dasharray', dashValue)
+              .attr('stroke-linecap', lineCap)
+              .attr('pointer-events', 'none');
+            formG.append('line')
+              .attr('x1', a.xEnd).attr('y1', a.yBase)
+              .attr('x2', b.xStart).attr('y2', b.yBase)
+              .attr('stroke', color).attr('stroke-width', Math.max(1, fLineWidth - 1))
+              .attr('stroke-dasharray', dashValue)
+              .attr('stroke-linecap', lineCap)
+              .attr('opacity', 0.7)
+              .attr('pointer-events', 'none');
+          }
+        }
+      });
+    }
+
+    // Step 5: Draw PER-WELL horizontal TOP & BASE lines + ⊕ markers at each well's actual depth
+    // Also draw formation NAME label inside the last track of each well (once per well per formation)
+    const lastTrackOffset = (numTracks - 1) * (TRACK_W + SEP); // offset from well's xStart to last track's left edge
+    wellForms.forEach((forms, wi) => {
+      forms.forEach(({ name, color, yTop, yBase, xStart, xEnd }) => {
+        // ── Formation name label INSIDE the last track of this well ──
+        if (fShowLabels && yTop >= HDR_H && yTop <= HDR_H + PLOT_H) {
+          const lastTrackX = xStart + lastTrackOffset;
+          const labelX = lastTrackX + 4; // 4px left padding inside last track
+          const labelY = yTop - 4;       // 4px above the line
+          // White outline for contrast
+          formG.append('text')
+            .attr('x', labelX).attr('y', labelY)
+            .attr('text-anchor', 'start')
+            .attr('font-size', 10).attr('font-weight', 800)
+            .attr('fill', '#fff').attr('stroke', '#fff').attr('stroke-width', 3)
+            .attr('paint-order', 'stroke')
+            .attr('pointer-events', 'none')
+            .text(name);
+          // Colored text on top
+          formG.append('text')
+            .attr('x', labelX).attr('y', labelY)
+            .attr('text-anchor', 'start')
+            .attr('font-size', 10).attr('font-weight', 800)
+            .attr('fill', color)
+            .attr('pointer-events', 'none')
+            .text(name);
+        }
+
+        if (fShowLines && yTop >= HDR_H && yTop <= HDR_H + PLOT_H) {
+          // Shadow line behind (same dash pattern so style stays visible)
+          formG.append('line')
+            .attr('x1', xStart).attr('y1', yTop)
+            .attr('x2', xEnd).attr('y2', yTop)
+            .attr('stroke', 'rgba(0,0,0,0.35)').attr('stroke-width', fLineWidth + 2)
+            .attr('stroke-dasharray', dashValue)
+            .attr('stroke-linecap', lineCap)
+            .attr('pointer-events', 'none');
+          // Main colored top line across THIS well's tracks only
+          formG.append('line')
+            .attr('x1', xStart).attr('y1', yTop)
+            .attr('x2', xEnd).attr('y2', yTop)
+            .attr('stroke', color).attr('stroke-width', fLineWidth)
+            .attr('stroke-dasharray', dashValue)
+            .attr('stroke-linecap', lineCap)
+            .attr('pointer-events', 'none');
+          // ⊕ markers at this well's boundaries
+          [xStart, xEnd].forEach(cx => {
+            formG.append('circle')
+              .attr('cx', cx).attr('cy', yTop).attr('r', cr)
+              .attr('fill', color).attr('fill-opacity', 0.15)
+              .attr('stroke', color).attr('stroke-width', 1.8)
+              .attr('pointer-events', 'none');
+            formG.append('line').attr('x1', cx - 3).attr('y1', yTop).attr('x2', cx + 3).attr('y2', yTop)
+              .attr('stroke', color).attr('stroke-width', 1.2).attr('pointer-events', 'none');
+            formG.append('line').attr('x1', cx).attr('y1', yTop - 3).attr('x2', cx).attr('y2', yTop + 3)
+              .attr('stroke', color).attr('stroke-width', 1.2).attr('pointer-events', 'none');
+          });
+        }
+
+        if (fShowLines && yBase >= HDR_H && yBase <= HDR_H + PLOT_H && Math.abs(yBase - yTop) > 3) {
+          formG.append('line')
+            .attr('x1', xStart).attr('y1', yBase)
+            .attr('x2', xEnd).attr('y2', yBase)
+            .attr('stroke', 'rgba(0,0,0,0.30)').attr('stroke-width', fLineWidth + 1)
+            .attr('stroke-dasharray', dashValue)
+            .attr('stroke-linecap', lineCap)
+            .attr('pointer-events', 'none');
+          formG.append('line')
+            .attr('x1', xStart).attr('y1', yBase)
+            .attr('x2', xEnd).attr('y2', yBase)
+            .attr('stroke', color).attr('stroke-width', Math.max(1, fLineWidth - 1))
+            .attr('stroke-dasharray', dashValue)
+            .attr('stroke-linecap', lineCap)
+            .attr('opacity', 0.7)
+            .attr('pointer-events', 'none');
+        }
+      });
+    });
+
+    // Step 6: Labels at the LEFT edge (using leftmost well's depth) and RIGHT edge (using rightmost well's depth)
+    if (fShowLabels) {
+      formIndex.forEach(({ name, color, occurrences }) => {
+        const sorted = [...occurrences].sort((a, b) => a.wi - b.wi);
+        const leftmost = sorted[0].form;
+        const rightmost = sorted[sorted.length - 1].form;
+
+        // LEFT label at leftmost well's top depth
+        if (leftmost.yTop >= HDR_H && leftmost.yTop <= HDR_H + PLOT_H) {
+          formG.append('text')
+            .attr('x', labelLeftX).attr('y', leftmost.yTop - 4)
+            .attr('text-anchor', 'start')
+            .attr('font-size', 11).attr('font-weight', 800)
+            .attr('fill', '#fff').attr('stroke', '#fff').attr('stroke-width', 3)
+            .attr('paint-order', 'stroke')
+            .attr('pointer-events', 'none')
+            .text(name);
+          formG.append('text')
+            .attr('x', labelLeftX).attr('y', leftmost.yTop - 4)
+            .attr('text-anchor', 'start')
+            .attr('font-size', 11).attr('font-weight', 800)
+            .attr('fill', color)
+            .attr('pointer-events', 'none')
+            .text(name);
+        }
+
+        // RIGHT label at rightmost well's top depth
+        if (rightmost.yTop >= HDR_H && rightmost.yTop <= HDR_H + PLOT_H) {
+          formG.append('text')
+            .attr('x', labelRightX).attr('y', rightmost.yTop - 4)
+            .attr('text-anchor', 'start')
+            .attr('font-size', 11).attr('font-weight', 800)
+            .attr('fill', '#fff').attr('stroke', '#fff').attr('stroke-width', 3)
+            .attr('paint-order', 'stroke')
+            .attr('pointer-events', 'none')
+            .text(name);
+          formG.append('text')
+            .attr('x', labelRightX).attr('y', rightmost.yTop - 4)
+            .attr('text-anchor', 'start')
+            .attr('font-size', 11).attr('font-weight', 800)
+            .attr('fill', color)
+            .attr('pointer-events', 'none')
+            .text(name);
+        }
+
+        // Base labels (only if base depth differs enough from top)
+        if (Math.abs(leftmost.yBase - leftmost.yTop) > 18 &&
+            leftmost.yBase >= HDR_H && leftmost.yBase <= HDR_H + PLOT_H) {
+          formG.append('text')
+            .attr('x', labelLeftX).attr('y', leftmost.yBase - 4)
+            .attr('font-size', 10).attr('font-weight', 700)
+            .attr('fill', '#fff').attr('stroke', '#fff').attr('stroke-width', 3)
+            .attr('paint-order', 'stroke')
+            .attr('pointer-events', 'none')
+            .text(name + ' (base)');
+          formG.append('text')
+            .attr('x', labelLeftX).attr('y', leftmost.yBase - 4)
+            .attr('font-size', 10).attr('font-weight', 700)
+            .attr('fill', color).attr('opacity', 0.8)
+            .attr('pointer-events', 'none')
+            .text(name + ' (base)');
+        }
+        if (Math.abs(rightmost.yBase - rightmost.yTop) > 18 &&
+            rightmost.yBase >= HDR_H && rightmost.yBase <= HDR_H + PLOT_H) {
+          formG.append('text')
+            .attr('x', labelRightX).attr('y', rightmost.yBase - 4)
+            .attr('font-size', 10).attr('font-weight', 700)
+            .attr('fill', '#fff').attr('stroke', '#fff').attr('stroke-width', 3)
+            .attr('paint-order', 'stroke')
+            .attr('pointer-events', 'none')
+            .text(name + ' (base)');
+          formG.append('text')
+            .attr('x', labelRightX).attr('y', rightmost.yBase - 4)
+            .attr('font-size', 10).attr('font-weight', 700)
+            .attr('fill', color).attr('opacity', 0.8)
+            .attr('pointer-events', 'none')
+            .text(name + ' (base)');
+        }
+      });
+    }
+  }
+
+  // Outer border
+  svg.append('rect').attr('x', 0).attr('y', 0).attr('width', totalW).attr('height', totalH)
+    .attr('fill', 'none').attr('stroke', '#444').attr('stroke-width', 1.5);
+
+  // Crosshair and tooltip
+  const crosshair = svg.append('line')
+    .attr('x1', 0).attr('x2', totalW)
+    .attr('stroke', '#e05c6b').attr('stroke-width', 1.2)
+    .attr('stroke-dasharray', '5,3')
+    .style('pointer-events', 'none').style('display', 'none');
+
+  const tt = document.getElementById('tt');
+
+  svg.append('rect')
+    .attr('x', DEPTH_W).attr('y', HDR_H)
+    .attr('width', totalW - DEPTH_W).attr('height', PLOT_H)
+    .attr('fill', 'transparent')
+    .on('mousemove', function(event) {
+      const [, my] = d3.pointer(event, svg.node());
+      const depth = Math.max(depthMin, Math.min(depthMax, yScale.invert(my)));
+      crosshair.attr('y1', my).attr('y2', my).style('display', null);
+
+      let html = `<div class="tt-depth">⬇ ${fmtVal(depth)} ${refLas.depthUnit || 'm'}</div>`;
+      // Group by well
+      let lastWellName = '';
+      for (const ci of allCurveInfos) {
+        if (ci.wellName !== lastWellName) {
+          html += `<div style="font-size:0.7rem;color:#90caf9;margin-top:3px;font-weight:700">${ci.wellName}</div>`;
+          lastWellName = ci.wellName;
+        }
+        const idx = bisect(ci.depths || refDepths, depth);
+        const v = ci.vals[idx];
+        const txt = (v !== null && isFinite(v)) ? fmtVal(v) : '—';
+        html += `<div class="tt-row">
+          <span class="tt-dot" style="background:${ci.color}"></span>
+          <span class="tt-nm">${ci.mnem}</span>
+          <span class="tt-vl">${txt}${ci.unit ? ' <em style="color:#999;font-style:normal;font-size:0.67rem">' + ci.unit + '</em>' : ''}</span>
+        </div>`;
+      }
+      tt.innerHTML = html;
+      tt.style.display = 'block';
+      const px = event.clientX, py = event.clientY, tw = 290, th = 40 + allCurveInfos.length * 22;
+      tt.style.left = (px + 15 + tw > window.innerWidth ? px - tw - 10 : px + 15) + 'px';
+      tt.style.top = (py + th > window.innerHeight ? py - th : py + 8) + 'px';
+    })
+    .on('mouseleave', () => { crosshair.style('display', 'none'); tt.style.display = 'none'; });
+}
+
+// Multi-well variant of drawTrack that handles well name offset and returns depths for tooltip
+function drawTrackMulti(svg, las, trackCurves, indices, depths, yScale,
+                        xOff, W, HDR_H, PLOT_H, FOOT_H, ROW_H, clipIdx, WELL_NAME_H) {
+  const stats = [];
+  for (const tc of trackCurves) {
+    const cd = las.data[tc.mnem];
+    if (!cd) continue;
+    const vals = indices.map(i => cd.values[i]);
+    const useLog = tc.scale === 'log';
+    const valid = vals.filter(v => v !== null && isFinite(v) && (!useLog || v > 0));
+    if (!valid.length) continue;
+    let minV = d3.min(valid), maxV = d3.max(valid);
+    if (minV === maxV) { minV *= 0.9; maxV *= 1.1; if (minV === maxV) { minV--; maxV++; } }
+    if (useLog) {
+      minV = Math.pow(10, Math.floor(Math.log10(Math.max(minV, 1e-9))));
+      maxV = Math.pow(10, Math.ceil(Math.log10(maxV)));
+      if (minV >= maxV) maxV = minV * 10;
+    } else {
+      const pad = (maxV - minV) * 0.05; minV -= pad; maxV += pad;
+    }
+    stats.push({ ...tc, vals, minV, maxV, unit: cd.unit || '' });
+  }
+  if (!stats.length) return [];
+
+  // Track header (below well name banner)
+  svg.append('rect').attr('x', xOff).attr('y', WELL_NAME_H).attr('width', W).attr('height', HDR_H - WELL_NAME_H).attr('fill', '#293045');
+
+  const sw = W / stats.length;
+  stats.forEach((s, ci) => {
+    svg.append('rect').attr('x', xOff + ci * sw).attr('y', WELL_NAME_H).attr('width', sw).attr('height', 4).attr('fill', s.color);
+  });
+
+  stats.forEach((s, ci) => {
+    const ry = WELL_NAME_H + 6 + ci * ROW_H;
+    svg.append('rect').attr('x', xOff + 3).attr('y', ry + 2).attr('width', 3).attr('height', ROW_H - 8)
+      .attr('fill', s.color).attr('rx', 1);
+    svg.append('text').attr('x', xOff + 10).attr('y', ry + 15)
+      .attr('fill', '#fff').attr('font-size', 10).attr('font-weight', 700)
+      .text(s.mnem.length > 10 ? s.mnem.slice(0, 9) + '…' : s.mnem);
+    svg.append('text').attr('x', xOff + 10).attr('y', ry + 26)
+      .attr('fill', 'rgba(255,255,255,0.45)').attr('font-size', 7)
+      .text(s.unit ? `(${s.unit})` : '');
+
+    const bx = xOff + W - 45, by = ry + 3;
+    svg.append('rect').attr('x', bx).attr('y', by).attr('width', 28).attr('height', 12).attr('rx', 3)
+      .attr('fill', s.scale === 'log' ? 'rgba(224,92,107,0.35)' : 'rgba(91,125,232,0.3)');
+    svg.append('text').attr('x', bx + 14).attr('y', by + 9).attr('text-anchor', 'middle')
+      .attr('font-size', 7).attr('font-weight', 700)
+      .attr('fill', s.scale === 'log' ? '#ff8a95' : '#8aabff')
+      .text(s.scale === 'log' ? 'LOG' : 'LIN');
+
+    const leftVal = s.reversed ? s.maxV : s.minV;
+    const rightVal = s.reversed ? s.minV : s.maxV;
+    svg.append('text').attr('x', xOff + 4).attr('y', ry + ROW_H - 3)
+      .attr('font-size', 6.5).attr('fill', 'rgba(255,255,255,0.55)').text(fmtVal(leftVal));
+    svg.append('text').attr('x', xOff + W - 4).attr('y', ry + ROW_H - 3).attr('text-anchor', 'end')
+      .attr('font-size', 6.5).attr('fill', 'rgba(255,255,255,0.55)').text(fmtVal(rightVal));
+  });
+
+  svg.append('line').attr('x1', xOff).attr('y1', HDR_H).attr('x2', xOff + W).attr('y2', HDR_H)
+    .attr('stroke', '#555').attr('stroke-width', 1.5);
+
+  const clipId = `clip_m${clipIdx}`;
+  svg.append('defs').append('clipPath').attr('id', clipId)
+    .append('rect').attr('x', xOff).attr('y', HDR_H).attr('width', W).attr('height', PLOT_H);
+
+  svg.append('rect').attr('x', xOff).attr('y', HDR_H).attr('width', W).attr('height', PLOT_H).attr('fill', '#fafafa');
+
+  [0.25, 0.5, 0.75].forEach(f => {
+    svg.append('line')
+      .attr('x1', xOff + f * W).attr('y1', HDR_H)
+      .attr('x2', xOff + f * W).attr('y2', HDR_H + PLOT_H)
+      .attr('stroke', '#e4e4e4').attr('stroke-width', 0.5);
+  });
+
+  const bodyGrp = svg.append('g').attr('clip-path', `url(#${clipId})`);
+
+  stats.forEach(s => {
+    const useLog = s.scale === 'log';
+    const xRange = s.reversed ? [W, 0] : [0, W];
+    const xScale = useLog
+      ? d3.scaleLog().domain([s.minV, s.maxV]).range(xRange).clamp(true)
+      : d3.scaleLinear().domain([s.minV, s.maxV]).range(xRange).clamp(true);
+
+    const segments = [];
+    let seg = [];
+    for (let j = 0; j < s.vals.length; j++) {
+      const v = s.vals[j];
+      if (v !== null && isFinite(v) && (!useLog || v > 0)) {
+        seg.push({ d: depths[j], v });
+      } else {
+        if (seg.length > 1) segments.push(seg);
+        seg = [];
+      }
+    }
+    if (seg.length > 1) segments.push(seg);
+
+    const lineFn = d3.line().x(p => xOff + xScale(p.v)).y(p => yScale(p.d));
+    segments.forEach(sg => {
+      bodyGrp.append('path').datum(sg)
+        .attr('fill', 'none').attr('stroke', s.color)
+        .attr('stroke-width', 1.3).attr('stroke-linejoin', 'round')
+        .attr('d', lineFn);
+    });
+  });
+
+  // Footer
+  const fY = HDR_H + PLOT_H;
+  svg.append('rect').attr('x', xOff).attr('y', fY).attr('width', W).attr('height', FOOT_H).attr('fill', '#eceff1');
+
+  if (stats.length === 1) {
+    const s0 = stats[0];
+    const useLog = s0.scale === 'log';
+    const xRange0 = s0.reversed ? [W, 0] : [0, W];
+    const xScale0 = useLog
+      ? d3.scaleLog().domain([s0.minV, s0.maxV]).range(xRange0).clamp(true)
+      : d3.scaleLinear().domain([s0.minV, s0.maxV]).range(xRange0).clamp(true);
+    (useLog ? xScale0.ticks(4) : xScale0.ticks(3)).forEach(t => {
+      if (!isFinite(xScale0(t))) return;
+      const fx = xOff + xScale0(t);
+      svg.append('line').attr('x1', fx).attr('y1', fY).attr('x2', fx).attr('y2', fY + 5)
+        .attr('stroke', s0.color).attr('stroke-width', 0.8);
+      svg.append('text').attr('x', fx).attr('y', fY + 18).attr('text-anchor', 'middle')
+        .attr('fill', '#555').attr('font-size', 7).text(fmtVal(t));
+    });
+  }
+
+  return stats.map(s => ({ mnem: s.mnem, color: s.color, vals: s.vals, unit: s.unit, depths: depths }));
+}
+
+// Draw an empty placeholder track when a well doesn't have a curve
+function drawEmptyTrack(svg, mnem, xOff, W, HDR_H, PLOT_H, FOOT_H, WELL_NAME_H) {
+  // Header
+  svg.append('rect').attr('x', xOff).attr('y', WELL_NAME_H).attr('width', W).attr('height', HDR_H - WELL_NAME_H).attr('fill', '#293045');
+  svg.append('text').attr('x', xOff + W / 2).attr('y', WELL_NAME_H + 22)
+    .attr('text-anchor', 'middle').attr('fill', '#78909c').attr('font-size', 10).attr('font-weight', 700)
+    .text(mnem);
+  svg.append('text').attr('x', xOff + W / 2).attr('y', WELL_NAME_H + 36)
+    .attr('text-anchor', 'middle').attr('fill', '#546e7a').attr('font-size', 8)
+    .text('N/A');
+
+  svg.append('line').attr('x1', xOff).attr('y1', HDR_H).attr('x2', xOff + W).attr('y2', HDR_H)
+    .attr('stroke', '#555').attr('stroke-width', 1.5);
+
+  // Body - striped empty pattern
+  svg.append('rect').attr('x', xOff).attr('y', HDR_H).attr('width', W).attr('height', PLOT_H).attr('fill', '#f0f0f0');
+  // Diagonal lines to indicate "no data"
+  for (let dy = 0; dy < PLOT_H; dy += 20) {
+    svg.append('line')
+      .attr('x1', xOff).attr('y1', HDR_H + dy)
+      .attr('x2', xOff + Math.min(W, 20)).attr('y2', HDR_H + dy + Math.min(W, 20))
+      .attr('stroke', '#e0e0e0').attr('stroke-width', 0.5);
+  }
+  svg.append('text')
+    .attr('x', xOff + W / 2).attr('y', HDR_H + PLOT_H / 2)
+    .attr('text-anchor', 'middle').attr('fill', '#bbb').attr('font-size', 12).attr('font-weight', 600)
+    .text('NO DATA');
+
+  // Footer
+  svg.append('rect').attr('x', xOff).attr('y', HDR_H + PLOT_H).attr('width', W).attr('height', FOOT_H).attr('fill', '#eceff1');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 9. DRAW DEPTH TRACK
+// ══════════════════════════════════════════════════════════════
+function drawDepthTrack(svg, yScale, dMin, dMax, majTicks, minTicks, W, HDR_H, PLOT_H, FOOT_H, unit) {
+  svg.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', HDR_H).attr('fill', '#37474f');
+  svg.append('text').attr('x', W / 2).attr('y', Math.min(24, HDR_H * 0.28))
+    .attr('text-anchor', 'middle').attr('fill', '#eceff1').attr('font-size', 13).attr('font-weight', 700)
+    .text('DEPTH');
+  svg.append('text').attr('x', W / 2).attr('y', Math.min(40, HDR_H * 0.46))
+    .attr('text-anchor', 'middle').attr('fill', '#78909c').attr('font-size', 10).text(`(${unit})`);
+  svg.append('text').attr('x', W / 2).attr('y', Math.min(57, HDR_H * 0.65))
+    .attr('text-anchor', 'middle').attr('fill', '#546e7a').attr('font-size', 8.5)
+    .text(`${fmtVal(dMin)} – ${fmtVal(dMax)}`);
+  svg.append('line').attr('x1', 0).attr('y1', HDR_H).attr('x2', W).attr('y2', HDR_H)
+    .attr('stroke', '#444').attr('stroke-width', 2);
+
+  svg.append('rect').attr('x', 0).attr('y', HDR_H).attr('width', W).attr('height', PLOT_H).attr('fill', '#f5f5f5');
+
+  minTicks.forEach(t => {
+    const y = yScale(t);
+    svg.append('line').attr('x1', W - 5).attr('y1', y).attr('x2', W).attr('y2', y)
+      .attr('stroke', '#bbb').attr('stroke-width', 0.5);
+  });
+  majTicks.forEach(t => {
+    const y = yScale(t);
+    svg.append('line').attr('x1', 4).attr('y1', y).attr('x2', W).attr('y2', y)
+      .attr('stroke', '#999').attr('stroke-width', 0.8);
+    svg.append('text').attr('x', W - 8).attr('y', y - 2).attr('text-anchor', 'end')
+      .attr('fill', '#333').attr('font-size', 8).text(t.toFixed(0));
+  });
+
+  svg.append('rect').attr('x', 0).attr('y', HDR_H + PLOT_H).attr('width', W).attr('height', FOOT_H).attr('fill', '#eceff1');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 10. DRAW LOG TRACK
+// ══════════════════════════════════════════════════════════════
+function drawTrack(svg, las, trackCurves, indices, depths, yScale,
+                   xOff, W, HDR_H, PLOT_H, FOOT_H, ROW_H, ti) {
+
+  const stats = [];
+  for (const tc of trackCurves) {
+    const cd = las.data[tc.mnem];
+    if (!cd) continue;
+    const vals = indices.map(i => cd.values[i]);
+    const useLog = tc.scale === 'log';
+    const valid = vals.filter(v => v !== null && isFinite(v) && (!useLog || v > 0));
+    if (!valid.length) continue;
+    let minV = d3.min(valid), maxV = d3.max(valid);
+    if (minV === maxV) { minV *= 0.9; maxV *= 1.1; if (minV === maxV) { minV--; maxV++; } }
+    if (useLog) {
+      minV = Math.pow(10, Math.floor(Math.log10(Math.max(minV, 1e-9))));
+      maxV = Math.pow(10, Math.ceil(Math.log10(maxV)));
+      if (minV >= maxV) maxV = minV * 10;
+    } else {
+      const pad = (maxV - minV) * 0.05; minV -= pad; maxV += pad;
+    }
+    stats.push({ ...tc, vals, minV, maxV, unit: cd.unit || '' });
+  }
+  if (!stats.length) return [];
+
+  svg.append('rect').attr('x', xOff).attr('y', 0).attr('width', W).attr('height', HDR_H).attr('fill', '#293045');
+
+  const sw = W / stats.length;
+  stats.forEach((s, ci) => {
+    svg.append('rect').attr('x', xOff + ci * sw).attr('y', 0).attr('width', sw).attr('height', 4).attr('fill', s.color);
+  });
+
+  stats.forEach((s, ci) => {
+    const ry = 6 + ci * ROW_H;
+    svg.append('rect').attr('x', xOff + 3).attr('y', ry + 2).attr('width', 3).attr('height', ROW_H - 8)
+      .attr('fill', s.color).attr('rx', 1);
+    svg.append('text').attr('x', xOff + 10).attr('y', ry + 15)
+      .attr('fill', '#fff').attr('font-size', 11).attr('font-weight', 700)
+      .text(s.mnem.length > 12 ? s.mnem.slice(0, 11) + '…' : s.mnem);
+    svg.append('text').attr('x', xOff + 10).attr('y', ry + 26)
+      .attr('fill', 'rgba(255,255,255,0.45)').attr('font-size', 7.5)
+      .text(s.unit ? `(${s.unit})` : '');
+
+    const bx = xOff + W - 50, by = ry + 3;
+    svg.append('rect').attr('x', bx).attr('y', by).attr('width', 30).attr('height', 13).attr('rx', 3)
+      .attr('fill', s.scale === 'log' ? 'rgba(224,92,107,0.35)' : 'rgba(91,125,232,0.3)');
+    svg.append('text').attr('x', bx + 15).attr('y', by + 10).attr('text-anchor', 'middle')
+      .attr('font-size', 7.5).attr('font-weight', 700)
+      .attr('fill', s.scale === 'log' ? '#ff8a95' : '#8aabff')
+      .text(s.scale === 'log' ? 'LOG' : 'LIN');
+
+    svg.append('text').attr('x', xOff + W - 8).attr('y', ry + 12).attr('text-anchor', 'end')
+      .attr('font-size', 13).attr('fill', s.reversed ? '#ff9800' : '#607d8b')
+      .text(s.reversed ? '←' : '→');
+
+    const leftVal = s.reversed ? s.maxV : s.minV;
+    const rightVal = s.reversed ? s.minV : s.maxV;
+    svg.append('text').attr('x', xOff + 10).attr('y', ry + ROW_H - 3)
+      .attr('font-size', 7).attr('fill', 'rgba(255,255,255,0.6)').text(fmtVal(leftVal));
+    svg.append('text').attr('x', xOff + W - 5).attr('y', ry + ROW_H - 3).attr('text-anchor', 'end')
+      .attr('font-size', 7).attr('fill', 'rgba(255,255,255,0.6)').text(fmtVal(rightVal));
+
+    if (ci < stats.length - 1) {
+      svg.append('line').attr('x1', xOff + 4).attr('y1', ry + ROW_H)
+        .attr('x2', xOff + W - 4).attr('y2', ry + ROW_H)
+        .attr('stroke', 'rgba(255,255,255,0.1)').attr('stroke-width', 0.5);
+    }
+  });
+
+  svg.append('line').attr('x1', xOff).attr('y1', HDR_H).attr('x2', xOff + W).attr('y2', HDR_H)
+    .attr('stroke', '#555').attr('stroke-width', 1.5);
+
+  const clipId = `clip_t${ti}`;
+  svg.append('defs').append('clipPath').attr('id', clipId)
+    .append('rect').attr('x', xOff).attr('y', HDR_H).attr('width', W).attr('height', PLOT_H);
+
+  svg.append('rect').attr('x', xOff).attr('y', HDR_H).attr('width', W).attr('height', PLOT_H).attr('fill', '#fafafa');
+
+  [0.25, 0.5, 0.75].forEach(f => {
+    svg.append('line')
+      .attr('x1', xOff + f * W).attr('y1', HDR_H)
+      .attr('x2', xOff + f * W).attr('y2', HDR_H + PLOT_H)
+      .attr('stroke', '#e4e4e4').attr('stroke-width', 0.5);
+  });
+
+  const bodyGrp = svg.append('g').attr('clip-path', `url(#${clipId})`);
+
+  stats.forEach(s => {
+    const useLog = s.scale === 'log';
+    const xRange = s.reversed ? [W, 0] : [0, W];
+    const xScale = useLog
+      ? d3.scaleLog().domain([s.minV, s.maxV]).range(xRange).clamp(true)
+      : d3.scaleLinear().domain([s.minV, s.maxV]).range(xRange).clamp(true);
+
+    const segments = [];
+    let seg = [];
+    for (let j = 0; j < s.vals.length; j++) {
+      const v = s.vals[j];
+      if (v !== null && isFinite(v) && (!useLog || v > 0)) {
+        seg.push({ d: depths[j], v });
+      } else {
+        if (seg.length > 1) segments.push(seg);
+        seg = [];
+      }
+    }
+    if (seg.length > 1) segments.push(seg);
+
+    const lineFn = d3.line().x(p => xOff + xScale(p.v)).y(p => yScale(p.d));
+    segments.forEach(sg => {
+      bodyGrp.append('path').datum(sg)
+        .attr('fill', 'none').attr('stroke', s.color)
+        .attr('stroke-width', 1.3).attr('stroke-linejoin', 'round')
+        .attr('d', lineFn);
+    });
+  });
+
+  const fY = HDR_H + PLOT_H;
+  svg.append('rect').attr('x', xOff).attr('y', fY).attr('width', W).attr('height', FOOT_H).attr('fill', '#eceff1');
+
+  if (stats.length === 1) {
+    const s0 = stats[0];
+    const useLog = s0.scale === 'log';
+    const xRange0 = s0.reversed ? [W, 0] : [0, W];
+    const xScale0 = useLog
+      ? d3.scaleLog().domain([s0.minV, s0.maxV]).range(xRange0).clamp(true)
+      : d3.scaleLinear().domain([s0.minV, s0.maxV]).range(xRange0).clamp(true);
+    (useLog ? xScale0.ticks(5) : xScale0.ticks(4)).forEach(t => {
+      if (!isFinite(xScale0(t))) return;
+      const fx = xOff + xScale0(t);
+      svg.append('line').attr('x1', fx).attr('y1', fY).attr('x2', fx).attr('y2', fY + 6)
+        .attr('stroke', s0.color).attr('stroke-width', 0.8);
+      svg.append('text').attr('x', fx).attr('y', fY + 20).attr('text-anchor', 'middle')
+        .attr('fill', '#555').attr('font-size', 7.5).text(fmtVal(t));
+    });
+  } else {
+    stats.forEach(s => {
+      const useLog = s.scale === 'log';
+      const xRange = s.reversed ? [W, 0] : [0, W];
+      const xScale = useLog
+        ? d3.scaleLog().domain([s.minV, s.maxV]).range(xRange).clamp(true)
+        : d3.scaleLinear().domain([s.minV, s.maxV]).range(xRange).clamp(true);
+      svg.append('line').attr('x1', xOff + xScale(s.minV)).attr('y1', fY)
+        .attr('x2', xOff + xScale(s.minV)).attr('y2', fY + 5).attr('stroke', s.color).attr('stroke-width', 1);
+      svg.append('line').attr('x1', xOff + xScale(s.maxV)).attr('y1', fY)
+        .attr('x2', xOff + xScale(s.maxV)).attr('y2', fY + 5).attr('stroke', s.color).attr('stroke-width', 1);
+    });
+  }
+
+  return stats.map(s => ({ mnem: s.mnem, color: s.color, vals: s.vals, unit: s.unit }));
+}
+
+// ══════════════════════════════════════════════════════════════
+// 11. STATS & ANALYSIS
+// ══════════════════════════════════════════════════════════════
+// --- Stats Panel drag logic ---
+(function() {
+  const panel = document.getElementById('stats-panel');
+  const header = document.getElementById('stats-panel-drag');
+  let isDragging = false, startX, startY, origLeft, origTop;
+  header.addEventListener('mousedown', e => {
+    if (e.target.closest('button')) return;
+    isDragging = true;
+    startX = e.clientX; startY = e.clientY;
+    const rect = panel.getBoundingClientRect();
+    origLeft = rect.left; origTop = rect.top;
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    panel.style.left = (origLeft + e.clientX - startX) + 'px';
+    panel.style.top = (origTop + e.clientY - startY) + 'px';
+    panel.style.right = 'auto';
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; document.body.style.userSelect = ''; });
+})();
+
+function openStatsPanel() { document.getElementById('stats-panel').classList.add('open'); }
+function closeStatsPanel() { document.getElementById('stats-panel').classList.remove('open'); }
+
+function exportStatsPng() {
+  // Find active tab's SVG
+  const activeTab = document.querySelector('.tab-content.active');
+  if (!activeTab) return;
+  const svgEl = activeTab.querySelector('svg');
+  if (!svgEl) { alert('No chart to export in current tab.'); return; }
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  canvas.width = svgEl.getAttribute('width') * 2;
+  canvas.height = svgEl.getAttribute('height') * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    const tabName = activeTab.id.replace('stats-tab-', '');
+    a.download = 'stats_' + tabName + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+}
+
+// Helper: get selected wells from stats panel checkboxes
+function getStatsSelectedWells() {
+  const checks = document.querySelectorAll('#stats-well-checks input[type=checkbox]:checked');
+  const wells = [];
+  checks.forEach(cb => {
+    const w = wellRegistry.get(cb.value);
+    if (w) wells.push({ wid: cb.value, well: w });
+  });
+  return wells;
+}
+
+document.getElementById('stats-btn').addEventListener('click', ()=>{
+  if (!wellRegistry.size) { alert('Load at least one well.'); return; }
+
+  // Populate well checkboxes
+  const checksDiv = document.getElementById('stats-well-checks');
+  checksDiv.innerHTML = '';
+  const WCOLORS = ['#1e88e5','#43a047','#e53935','#8e24aa','#f4511e','#00acc1','#d81b60','#6d4c41'];
+  let wi = 0;
+  wellRegistry.forEach((w, wid) => {
+    const color = WCOLORS[wi++ % WCOLORS.length];
+    checksDiv.innerHTML += `<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid ${color};color:${color};">
+      <input type="checkbox" value="${wid}" checked onchange="refreshStatsTab()" style="accent-color:${color};"> ${w.name.length > 14 ? w.name.slice(0,12)+'…' : w.name}
+    </label>`;
+  });
+
+  openStatsPanel();
+  refreshStatsTab();
+});
+
+function refreshStatsTab() {
+  const activeBtn = document.querySelector('#stats-tabs .tab.active');
+  const tabName = activeBtn?.textContent?.trim().toLowerCase() || 'statistics';
+  if (tabName === 'statistics') populateStatsTable();
+  else if (tabName === 'histogram') populateHistogramSelector();
+  else if (tabName === 'crossplot') populateCrossplotSelectors();
+}
+
+function switchStatsTab(tab, btn) {
+  document.querySelectorAll('#stats-tabs .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('stats-tab-' + tab).classList.add('active');
+  if (tab === 'stats') populateStatsTable();
+  if (tab === 'histogram') populateHistogramSelector();
+  if (tab === 'crossplot') populateCrossplotSelectors();
+}
+
+function populateStatsTable() {
+  const selWells = getStatsSelectedWells();
+  if (!selWells.length) { document.getElementById('stats-tab-stats').innerHTML = '<p style="color:#999;text-align:center;">Select at least one well.</p>'; return; }
+
+  const selected = [...document.querySelectorAll('#c-list input[type=checkbox]:checked')].map(c => c.dataset.mnem);
+  const WCOLORS = ['#1e88e5','#43a047','#e53935','#8e24aa','#f4511e','#00acc1','#d81b60','#6d4c41'];
+
+  // Build an SVG table for exportability
+  const rowH = 24, hdrH = 34, colW = 100, labelColW = 95;
+  const statLabels = ['Min', 'Max', 'Mean', 'Median', 'StdDev', 'P10', 'P90', 'Count'];
+  const nRows = statLabels.length;
+
+  // Collect data per well per curve
+  const wellData = [];
+  selWells.forEach(({ wid, well }, wi) => {
+    selected.forEach(mnem => {
+      const cd = well.las.data[mnem];
+      if (!cd) return;
+      const vals = cd.values.filter(v => v !== null && isFinite(v));
+      if (!vals.length) return;
+      vals.sort((a, b) => a - b);
+      const min = vals[0], max = vals[vals.length - 1];
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const median = vals[Math.floor(vals.length / 2)];
+      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+      const p10 = vals[Math.floor(vals.length * 0.1)];
+      const p90 = vals[Math.floor(vals.length * 0.9)];
+      wellData.push({ wellName: well.name, mnem, min, max, mean, median, std, p10, p90, count: vals.length, color: WCOLORS[wi % WCOLORS.length] });
+    });
+  });
+
+  if (!wellData.length) { document.getElementById('stats-tab-stats').innerHTML = '<p style="color:#999;text-align:center;">No curve data to show.</p>'; return; }
+
+  const nCols = wellData.length;
+  const svgW = labelColW + nCols * colW + 10;
+  const svgH = hdrH * 2 + nRows * rowH + 10;
+
+  const container = document.getElementById('stats-tab-stats');
+  container.innerHTML = '';
+  const svg = d3.select(container).append('svg').attr('width', svgW).attr('height', svgH);
+  svg.append('rect').attr('width', svgW).attr('height', svgH).attr('fill', '#fff');
+
+  // Column headers: well name + curve name
+  wellData.forEach((wd, ci) => {
+    const x = labelColW + ci * colW;
+    svg.append('rect').attr('x', x).attr('y', 0).attr('width', colW).attr('height', hdrH).attr('fill', wd.color).attr('fill-opacity', 0.15);
+    svg.append('text').attr('x', x + colW / 2).attr('y', 15).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', wd.color).attr('font-weight', 800)
+      .text(wd.wellName.length > 12 ? wd.wellName.slice(0, 11) + '…' : wd.wellName);
+    svg.append('text').attr('x', x + colW / 2).attr('y', 29).attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', '#1a2327').attr('font-weight', 800).text(wd.mnem);
+  });
+
+  // Stat label column header
+  svg.append('rect').attr('x', 0).attr('y', 0).attr('width', labelColW).attr('height', hdrH * 2).attr('fill', '#37474f');
+  svg.append('text').attr('x', labelColW / 2).attr('y', hdrH + 6).attr('text-anchor', 'middle').attr('fill', '#eceff1').attr('font-size', 13).attr('font-weight', 800).text('Statistic');
+
+  // Separator
+  svg.append('line').attr('x1', 0).attr('y1', hdrH).attr('x2', svgW).attr('y2', hdrH).attr('stroke', '#ddd').attr('stroke-width', 0.5);
+  const bodyTop = hdrH * 2;
+
+  // Row labels and values
+  statLabels.forEach((label, ri) => {
+    const y = bodyTop + ri * rowH;
+    svg.append('rect').attr('x', 0).attr('y', y).attr('width', labelColW).attr('height', rowH).attr('fill', ri % 2 === 0 ? '#f5f5f5' : '#fff');
+    svg.append('text').attr('x', 8).attr('y', y + 16).attr('font-size', 12).attr('fill', '#37474f').attr('font-weight', 700).text(label);
+
+    wellData.forEach((wd, ci) => {
+      const x = labelColW + ci * colW;
+      svg.append('rect').attr('x', x).attr('y', y).attr('width', colW).attr('height', rowH).attr('fill', ri % 2 === 0 ? '#fafafa' : '#fff');
+      const key = label.toLowerCase().replace('stddev', 'std');
+      const v = wd[key];
+      svg.append('text').attr('x', x + colW / 2).attr('y', y + 16).attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', '#1a2327').attr('font-weight', 600)
+        .text(v !== undefined ? fmtVal(v) : '—');
+    });
+  });
+
+  // Grid lines
+  for (let ci = 0; ci <= nCols; ci++) {
+    const x = labelColW + ci * colW;
+    svg.append('line').attr('x1', x).attr('y1', 0).attr('x2', x).attr('y2', svgH).attr('stroke', '#e0e0e0').attr('stroke-width', 0.5);
+  }
+  svg.append('rect').attr('x', 0).attr('y', 0).attr('width', svgW).attr('height', svgH).attr('fill', 'none').attr('stroke', '#ccc').attr('stroke-width', 1);
+}
+
+function populateHistogramSelector() {
+  const selWells = getStatsSelectedWells();
+  // Gather all unique curve mnemonics across selected wells
+  const allCurves = new Map();
+  selWells.forEach(({ well }) => {
+    well.las.curves.forEach(c => {
+      if (c.mnem === well.depthKey) return;
+      if (!allCurves.has(c.mnem)) allCurves.set(c.mnem, c.unit || '');
+    });
+  });
+
+  const sel = document.getElementById('hist-curve-sel');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  allCurves.forEach((unit, mnem) => {
+    sel.innerHTML += '<option value="' + mnem + '"' + (mnem === prev ? ' selected' : '') + '>' + mnem + (unit ? ' (' + unit + ')' : '') + '</option>';
+  });
+  renderHistogram();
+}
+
+function renderHistogram() {
+  const container = document.getElementById('hist-chart');
+  container.innerHTML = '';
+  const selWells = getStatsSelectedWells();
+  if (!selWells.length) return;
+  const mnem = document.getElementById('hist-curve-sel')?.value;
+  if (!mnem) return;
+
+  const WCOLORS = ['#1e88e5','#43a047','#e53935','#8e24aa','#f4511e','#00acc1','#d81b60','#6d4c41'];
+
+  // Gather data per well
+  const wellSets = [];
+  let globalMin = Infinity, globalMax = -Infinity, unit = '';
+  selWells.forEach(({ well }, wi) => {
+    const cd = well.las.data[mnem];
+    if (!cd) { wellSets.push([]); return; }
+    if (!unit && cd.unit) unit = cd.unit;
+    const raw = cd.values.filter(v => v !== null && isFinite(v));
+    if (raw.length) {
+      globalMin = Math.min(globalMin, d3.min(raw));
+      globalMax = Math.max(globalMax, d3.max(raw));
+    }
+    wellSets.push(raw);
+  });
+  if (!isFinite(globalMin)) { container.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">No valid data</div>'; return; }
+
+  const nBins = parseInt(document.getElementById('hist-bins')?.value) || 20;
+  const w = 720, h = 360;
+  const margin = { top: 34, right: 140, bottom: 48, left: 55 };
+  const pw = w - margin.left - margin.right;
+  const ph = h - margin.top - margin.bottom;
+
+  const svg = d3.select(container).append('svg').attr('width', w).attr('height', h);
+  svg.append('rect').attr('width', w).attr('height', h).attr('fill', '#fff');
+
+  const xScale = d3.scaleLinear().domain([globalMin, globalMax]).nice().range([0, pw]);
+  const histogram = d3.bin().domain(xScale.domain()).thresholds(xScale.ticks(nBins));
+
+  // Compute bins per well
+  const allBins = wellSets.map(raw => histogram(raw));
+  const yMax = d3.max(allBins.flat(), b => b.length);
+  const yScale = d3.scaleLinear().domain([0, yMax]).nice().range([ph, 0]);
+
+  const g = svg.append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  // If single well, solid bars; if multi-well, semi-transparent overlapping bars
+  const multiWell = selWells.length > 1;
+  allBins.forEach((bins, wi) => {
+    const color = WCOLORS[wi % WCOLORS.length];
+    g.selectAll('.bar-w' + wi).data(bins).enter().append('rect')
+      .attr('x', d => xScale(d.x0) + 1)
+      .attr('width', d => Math.max(0, xScale(d.x1) - xScale(d.x0) - 2))
+      .attr('y', d => yScale(d.length))
+      .attr('height', d => ph - yScale(d.length))
+      .attr('fill', color)
+      .attr('fill-opacity', multiWell ? 0.45 : 0.8)
+      .attr('stroke', multiWell ? color : 'none')
+      .attr('stroke-width', multiWell ? 0.5 : 0);
+  });
+
+  g.append('g').attr('transform', 'translate(0,' + ph + ')').call(d3.axisBottom(xScale).ticks(8)).selectAll('text').attr('font-size', 10);
+  g.append('g').call(d3.axisLeft(yScale).ticks(6)).selectAll('text').attr('font-size', 10);
+
+  svg.append('text').attr('x', margin.left + pw / 2).attr('y', h - 5).attr('text-anchor', 'middle')
+    .attr('font-size', 11).attr('fill', '#666').text(mnem + (unit ? ' (' + unit + ')' : ''));
+  svg.append('text').attr('x', 14).attr('y', margin.top + ph / 2)
+    .attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', '#666')
+    .attr('transform', 'rotate(-90 14 ' + (margin.top + ph / 2) + ')').text('Frequency');
+
+  // Legend
+  selWells.forEach(({ well }, wi) => {
+    const lx = margin.left + pw + 10, ly = margin.top + wi * 18;
+    svg.append('rect').attr('x', lx).attr('y', ly).attr('width', 12).attr('height', 12).attr('fill', WCOLORS[wi % WCOLORS.length]).attr('fill-opacity', 0.7);
+    svg.append('text').attr('x', lx + 16).attr('y', ly + 10).attr('font-size', 9).attr('fill', '#333')
+      .text(well.name.length > 14 ? well.name.slice(0, 13) + '…' : well.name);
+  });
+
+  // Summary line
+  const allRaw = wellSets.flat();
+  if (allRaw.length) {
+    const mean = allRaw.reduce((a, b) => a + b, 0) / allRaw.length;
+    svg.append('text').attr('x', margin.left + 5).attr('y', 16).attr('font-size', 10).attr('fill', '#333')
+      .text('n=' + allRaw.length + '  min=' + fmtVal(globalMin) + '  max=' + fmtVal(globalMax) + '  mean=' + fmtVal(mean));
+  }
+}
+
+function populateCrossplotSelectors() {
+  const selWells = getStatsSelectedWells();
+  // Gather all unique curves across selected wells
+  const allCurves = [];
+  const seen = new Set();
+  selWells.forEach(({ well }) => {
+    well.las.curves.forEach(c => {
+      if (c.mnem === well.depthKey) return;
+      if (seen.has(c.mnem)) return;
+      if (well.las.data[c.mnem]?.values.some(v => v !== null)) {
+        allCurves.push(c);
+        seen.add(c.mnem);
+      }
+    });
+  });
+
+  ['xplot-x', 'xplot-y', 'xplot-color'].forEach((id, idx) => {
+    const sel = document.getElementById(id);
+    const prev = sel.value;
+    sel.innerHTML = '';
+    if (id === 'xplot-color') {
+      sel.innerHTML = '<option value="DEPTH">Depth</option><option value="__WELL__">Well</option>';
+    }
+    allCurves.forEach((c, ci) => {
+      const selected = prev ? (c.mnem === prev) : (idx === 0 ? ci === 0 : idx === 1 ? ci === 1 : false);
+      sel.innerHTML += '<option value="' + c.mnem + '"' + (selected ? ' selected' : '') + '>' + c.mnem + '</option>';
+    });
+  });
+  renderCrossplot();
+}
+
+function renderCrossplot() {
+  const container = document.getElementById('xplot-chart');
+  const info = document.getElementById('xplot-info');
+  container.innerHTML = '';
+  info.textContent = '';
+  const selWells = getStatsSelectedWells();
+  if (!selWells.length) return;
+  const xMnem = document.getElementById('xplot-x')?.value;
+  const yMnem = document.getElementById('xplot-y')?.value;
+  const cMnem = document.getElementById('xplot-color')?.value;
+  if (!xMnem || !yMnem) return;
+
+  const WCOLORS = ['#1e88e5','#43a047','#e53935','#8e24aa','#f4511e','#00acc1','#d81b60','#6d4c41'];
+  const colorByWell = cMnem === '__WELL__';
+
+  // Collect points from all selected wells
+  const points = [];
+  let xUnit = '', yUnit = '';
+  selWells.forEach(({ well }, wi) => {
+    const xVals = well.las.data[xMnem]?.values || [];
+    const yVals = well.las.data[yMnem]?.values || [];
+    if (!xUnit && well.las.data[xMnem]?.unit) xUnit = well.las.data[xMnem].unit;
+    if (!yUnit && well.las.data[yMnem]?.unit) yUnit = well.las.data[yMnem].unit;
+    const depthVals = well.las.data[well.depthKey]?.values || [];
+    const cVals = (cMnem === 'DEPTH' || colorByWell) ? depthVals : (well.las.data[cMnem]?.values || depthVals);
+
+    for (let i = 0; i < Math.min(xVals.length, yVals.length); i++) {
+      const x = xVals[i], y = yVals[i], c = cVals[i] || depthVals[i];
+      if (x !== null && y !== null && isFinite(x) && isFinite(y)) {
+        points.push({ x, y, c: (c !== null && isFinite(c)) ? c : 0, wi, wellName: well.name });
+      }
+    }
+  });
+  if (!points.length) { container.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">No overlapping valid data</div>'; return; }
+
+  const w = 720, h = 500;
+  const margin = { top: 20, right: 120, bottom: 50, left: 60 };
+  const pw = w - margin.left - margin.right;
+  const ph = h - margin.top - margin.bottom;
+
+  const svg = d3.select(container).append('svg').attr('width', w).attr('height', h);
+  svg.append('rect').attr('width', w).attr('height', h).attr('fill', '#fff');
+
+  const xScale = d3.scaleLinear().domain(d3.extent(points, d => d.x)).nice().range([0, pw]);
+  const yScale = d3.scaleLinear().domain(d3.extent(points, d => d.y)).nice().range([ph, 0]);
+
+  let colorScale;
+  if (colorByWell) {
+    colorScale = d => WCOLORS[d.wi % WCOLORS.length];
+  } else {
+    const cExtent = d3.extent(points, d => d.c);
+    const seqScale = d3.scaleSequential(d3.interpolateViridis).domain(cExtent);
+    colorScale = d => seqScale(d.c);
+  }
+
+  const g = svg.append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  g.selectAll('circle').data(points).enter().append('circle')
+    .attr('cx', d => xScale(d.x)).attr('cy', d => yScale(d.y))
+    .attr('r', 2.5).attr('fill', d => colorScale(d)).attr('fill-opacity', 0.55).attr('stroke', 'none');
+
+  // Linear regression
+  const n = points.length;
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (const p of points) { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; }
+  const denom = n * sxx - sx * sx;
+  if (Math.abs(denom) > 1e-12) {
+    const slope = (n * sxy - sx * sy) / denom;
+    const intercept = (sy - slope * sx) / n;
+    const yMean = sy / n;
+    const ssRes = points.reduce((a, p) => a + (p.y - slope * p.x - intercept) ** 2, 0);
+    const ssTot = points.reduce((a, p) => a + (p.y - yMean) ** 2, 0);
+    const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+
+    const xDom = xScale.domain();
+    g.append('line')
+      .attr('x1', xScale(xDom[0])).attr('y1', yScale(slope * xDom[0] + intercept))
+      .attr('x2', xScale(xDom[1])).attr('y2', yScale(slope * xDom[1] + intercept))
+      .attr('stroke', '#ff9800').attr('stroke-width', 2).attr('stroke-dasharray', '6,3');
+
+    info.innerHTML = '<span style="color:#ff9800;font-weight:700;">R\u00B2 = ' + r2.toFixed(4) + '</span>  |  y = ' + fmtVal(slope) + 'x + ' + fmtVal(intercept) + '  |  ' + n + ' points from ' + selWells.length + ' well(s)';
+  }
+
+  g.append('g').attr('transform', 'translate(0,' + ph + ')').call(d3.axisBottom(xScale).ticks(8));
+  g.append('g').call(d3.axisLeft(yScale).ticks(8));
+
+  svg.append('text').attr('x', margin.left + pw / 2).attr('y', h - 8).attr('text-anchor', 'middle')
+    .attr('font-size', 11).attr('fill', '#666').text(xMnem + (xUnit ? ' (' + xUnit + ')' : ''));
+  svg.append('text').attr('x', 14).attr('y', margin.top + ph / 2).attr('text-anchor', 'middle')
+    .attr('font-size', 11).attr('fill', '#666')
+    .attr('transform', 'rotate(-90 14 ' + (margin.top + ph / 2) + ')').text(yMnem + (yUnit ? ' (' + yUnit + ')' : ''));
+
+  // Legend
+  if (colorByWell) {
+    selWells.forEach(({ well }, wi) => {
+      const lx = margin.left + pw + 10, ly = margin.top + wi * 18;
+      svg.append('circle').attr('cx', lx + 6).attr('cy', ly + 6).attr('r', 5).attr('fill', WCOLORS[wi % WCOLORS.length]).attr('fill-opacity', 0.7);
+      svg.append('text').attr('x', lx + 16).attr('y', ly + 10).attr('font-size', 9).attr('fill', '#333')
+        .text(well.name.length > 12 ? well.name.slice(0, 11) + '…' : well.name);
+    });
+  } else {
+    const cExtent = d3.extent(points, d => d.c);
+    const seqScale = d3.scaleSequential(d3.interpolateViridis).domain(cExtent);
+    const legendH = ph, legendW = 12, legendX = margin.left + pw + 15;
+    const defs = svg.append('defs');
+    const gradId = 'cleg_' + Date.now();
+    const grad = defs.append('linearGradient').attr('id', gradId).attr('x1', '0').attr('y1', '1').attr('x2', '0').attr('y2', '0');
+    grad.append('stop').attr('offset', '0%').attr('stop-color', seqScale(cExtent[0]));
+    grad.append('stop').attr('offset', '50%').attr('stop-color', seqScale((cExtent[0] + cExtent[1]) / 2));
+    grad.append('stop').attr('offset', '100%').attr('stop-color', seqScale(cExtent[1]));
+    svg.append('rect').attr('x', legendX).attr('y', margin.top).attr('width', legendW).attr('height', legendH)
+      .attr('fill', 'url(#' + gradId + ')').attr('stroke', '#ccc');
+    svg.append('text').attr('x', legendX + legendW + 4).attr('y', margin.top + 10).attr('font-size', 9).attr('fill', '#666').text(fmtVal(cExtent[1]));
+    svg.append('text').attr('x', legendX + legendW + 4).attr('y', margin.top + legendH).attr('font-size', 9).attr('fill', '#666').text(fmtVal(cExtent[0]));
+    svg.append('text').attr('x', legendX + legendW / 2).attr('y', margin.top - 6).attr('text-anchor', 'middle').attr('font-size', 9).attr('fill', '#999').text(cMnem);
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 13. QC REPORT (Floating Panel)
+// ══════════════════════════════════════════════════════════════
+
+// --- Drag logic for floating panel ---
+(function() {
+  const panel = document.getElementById('qc-panel');
+  const header = document.getElementById('qc-panel-drag');
+  let isDragging = false, startX, startY, origLeft, origTop;
+  header.addEventListener('mousedown', e => {
+    if (e.target.closest('button')) return;
+    isDragging = true;
+    startX = e.clientX; startY = e.clientY;
+    const rect = panel.getBoundingClientRect();
+    origLeft = rect.left; origTop = rect.top;
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    panel.style.left = (origLeft + e.clientX - startX) + 'px';
+    panel.style.top = (origTop + e.clientY - startY) + 'px';
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; document.body.style.userSelect = ''; });
+})();
+
+function openQCPanel() { document.getElementById('qc-panel').classList.add('open'); }
+function closeQCPanel() { document.getElementById('qc-panel').classList.remove('open'); }
+
+function exportQCPng() {
+  const svgEl = document.querySelector('#qc-coverage-chart svg');
+  if (!svgEl) { alert('No QC chart to export.'); return; }
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  canvas.width = svgEl.getAttribute('width') * 2;
+  canvas.height = svgEl.getAttribute('height') * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'qc_coverage.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+}
+
+document.getElementById('qc-btn').addEventListener('click', ()=>{
+  if (!wellRegistry.size) { alert('Load at least one well first.'); return; }
+
+  let html = '';
+
+  // Well selector
+  html += '<div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap;">';
+  html += '<label style="font-size:13px;font-weight:700;color:var(--muted);">Well:</label>';
+  html += '<select id="qc-well-sel" onchange="onQCWellChange()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;max-width:240px;font-weight:600;">';
+  wellRegistry.forEach((w, wid) => {
+    const sel = wid === currentWellId ? ' selected' : '';
+    html += `<option value="${wid}"${sel}>${w.name}</option>`;
+  });
+  html += '</select>';
+  html += '</div>';
+
+  // Visual Data Completeness
+  html += '<div class="qc-item"><div class="qc-title">📊 Data Coverage</div>';
+  html += '<div style="display:flex;gap:10px;margin:10px 0;align-items:center;flex-wrap:wrap;">';
+  html += '<select id="qc-mode" onchange="renderQCCoverage()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;">';
+  html += '<option value="all-logs">All Logs in Selected Well</option>';
+  html += '<option value="single-log">Single Log Across Wells</option>';
+  html += '</select>';
+  html += '<select id="qc-log-sel" onchange="renderQCCoverage()" style="padding:6px 10px;background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;font-weight:600;display:none;">';
+  html += '</select>';
+  html += '</div>';
+  html += '<div id="qc-coverage-chart" style="overflow-x:auto;background:#fff;border-radius:6px;padding:4px;"></div>';
+  html += '</div>';
+
+  // Placeholders for range and depth validation (populated by onQCWellChange)
+  html += '<div id="qc-range-section"></div>';
+  html += '<div id="qc-depth-section"></div>';
+
+  document.getElementById('qc-body').innerHTML = html;
+  openQCPanel();
+  onQCWellChange();
+});
+
+function onQCWellChange() {
+  const wid = document.getElementById('qc-well-sel')?.value;
+  if (!wid) return;
+  const well = wellRegistry.get(wid);
+  if (!well) return;
+  const las = well.las;
+
+  // Populate log selector for "single log across wells" mode
+  const logSel = document.getElementById('qc-log-sel');
+  if (logSel) {
+    logSel.innerHTML = '';
+    // Gather all unique curve mnemonics across all wells
+    const allMnems = new Set();
+    wellRegistry.forEach(w => {
+      w.las.curves.forEach(c => { if (c.mnem !== w.depthKey) allMnems.add(c.mnem); });
+    });
+    allMnems.forEach(m => { logSel.innerHTML += `<option value="${m}">${m}</option>`; });
+  }
+
+  // Range Validation
+  let rangeHtml = '<div class="qc-item"><div class="qc-title">📏 Range Validation</div>';
+  las.curves.forEach(c => {
+    const m = normMnem(c.mnem);
+    const vals = las.data[c.mnem]?.values.filter(v => v !== null) || [];
+    if (!vals.length) return;
+    let issues = [];
+    if (/^GR|GAMMA/.test(m) && vals.some(v => v > 300)) issues.push('GR > 300 API detected');
+    if (/^RHOB|RHO/.test(m)) {
+      if (vals.some(v => v < 1)) issues.push('RHOB < 1 detected');
+      if (vals.some(v => v > 3.5)) issues.push('RHOB > 3.5 detected');
+    }
+    if (/^NPHI|PHI/.test(m)) {
+      if (vals.some(v => v < -0.15)) issues.push('NPHI < -0.15 detected');
+      if (vals.some(v => v > 1)) issues.push('NPHI > 1 detected');
+    }
+    if (/^R[A-Z0-9]|RES/.test(m) && vals.some(v => v === 0)) issues.push('Zero resistivity detected');
+    if (issues.length) {
+      issues.forEach(iss => { rangeHtml += `<div class="qc-detail" style="margin-bottom:4px;"><span class="badge-warn">WARN</span> ${c.mnem}: ${iss}</div>`; });
+    } else {
+      rangeHtml += `<div class="qc-detail" style="margin-bottom:4px;"><span class="badge-pass">OK</span> ${c.mnem}</div>`;
+    }
+  });
+  rangeHtml += '</div>';
+  document.getElementById('qc-range-section').innerHTML = rangeHtml;
+
+  // Depth Validation
+  let depthHtml = '<div class="qc-item"><div class="qc-title">⬇ Depth Validation</div>';
+  const depthArr = las.data[well.depthKey]?.values || [];
+  if (depthArr.length) {
+    let monotonic = true, nullGaps = 0, dupCount = 0;
+    for (let i = 1; i < depthArr.length; i++) {
+      if (depthArr[i] !== null && depthArr[i-1] !== null && depthArr[i] < depthArr[i-1]) monotonic = false;
+      if (depthArr[i] === null && depthArr[i-1] !== null) nullGaps++;
+      if (depthArr[i] === depthArr[i-1]) dupCount++;
+    }
+    depthHtml += `<div class="qc-detail"><span class="${monotonic ? 'badge-pass' : 'badge-fail'}">${monotonic ? 'PASS' : 'FAIL'}</span> Monotonic increasing</div>`;
+    depthHtml += `<div class="qc-detail"><span class="${dupCount === 0 ? 'badge-pass' : 'badge-warn'}">${dupCount === 0 ? 'PASS' : dupCount + ' duplicates'}</span></div>`;
+    depthHtml += `<div class="qc-detail"><span class="${nullGaps === 0 ? 'badge-pass' : 'badge-warn'}">${nullGaps === 0 ? 'No gaps' : nullGaps + ' null gaps'}</span></div>`;
+  }
+  depthHtml += '</div>';
+  document.getElementById('qc-depth-section').innerHTML = depthHtml;
+
+  renderQCCoverage();
+}
+
+function renderQCCoverage() {
+  const mode = document.getElementById('qc-mode')?.value;
+  const logSel = document.getElementById('qc-log-sel');
+  if (logSel) logSel.style.display = mode === 'single-log' ? 'inline-block' : 'none';
+
+  const container = document.getElementById('qc-coverage-chart');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const QC_COLORS = ['#e05c6b','#5b9de8','#4caf50','#ff9800','#ab7be8','#26c6da','#d4a017','#ef5350','#66bb6a','#ff7043','#29b6f6','#9ccc65','#ec407a','#7e57c2','#26a69a'];
+
+  if (mode === 'all-logs') {
+    const wid = document.getElementById('qc-well-sel')?.value;
+    if (!wid) return;
+    const well = wellRegistry.get(wid);
+    if (!well) return;
+    const las = well.las;
+    const depthVals = las.data[well.depthKey]?.values || [];
+    if (!depthVals.length) return;
+    const validDepths = depthVals.filter(d => d !== null);
+    const dMin = Math.min(...validDepths), dMax = Math.max(...validDepths);
+
+    const curves = las.curves.filter(c => c.mnem !== well.depthKey);
+    const colW = 42, labelH = 50, depthTrackW = 65;
+    const chartH = 420;
+    const totalW = depthTrackW + curves.length * (colW + 2) + 10;
+
+    const svg = d3.select(container).append('svg').attr('width', totalW).attr('height', chartH + labelH + 10);
+    const yScale = d3.scaleLinear().domain([dMin, dMax]).range([labelH, labelH + chartH]);
+
+    const majStep = Math.pow(10, Math.floor(Math.log10((dMax - dMin) / 8)));
+    const niceS = (dMax - dMin) / 8 / majStep < 2 ? majStep : majStep * 2;
+    for (let d = Math.ceil(dMin / niceS) * niceS; d <= dMax; d += niceS) {
+      const y = yScale(d);
+      svg.append('line').attr('x1', 0).attr('y1', y).attr('x2', totalW).attr('y2', y).attr('stroke', '#eee').attr('stroke-width', 0.5);
+      svg.append('text').attr('x', depthTrackW - 4).attr('y', y + 4).attr('text-anchor', 'end').attr('font-size', 12).attr('font-weight', 600).attr('fill', '#37474f').text(d.toFixed(0));
+    }
+    svg.append('text').attr('x', depthTrackW / 2).attr('y', labelH - 8).attr('text-anchor', 'middle').attr('font-size', 12).attr('font-weight', 700).attr('fill', '#37474f').text('Depth');
+
+    curves.forEach((c, ci) => {
+      const x = depthTrackW + ci * (colW + 2);
+      const vals = las.data[c.mnem]?.values || [];
+      const color = QC_COLORS[ci % QC_COLORS.length];
+      const nonNull = vals.filter(v => v !== null).length;
+      const pct = vals.length ? (nonNull / vals.length * 100).toFixed(0) : 0;
+
+      svg.append('text').attr('x', x + colW / 2).attr('y', 15).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', '#1a2327').attr('font-weight', 800).text(c.mnem);
+      svg.append('text').attr('x', x + colW / 2).attr('y', 31).attr('text-anchor', 'middle').attr('font-size', 11).attr('font-weight', 700).attr('fill', pct >= 90 ? '#2e7d32' : pct >= 50 ? '#ef6c00' : '#c62828').text(pct + '%');
+
+      svg.append('rect').attr('x', x).attr('y', labelH).attr('width', colW).attr('height', chartH).attr('fill', '#f5f5f5').attr('stroke', '#ddd').attr('stroke-width', 0.5);
+
+      let inBlock = false, blockStart = 0;
+      for (let i = 0; i < depthVals.length; i++) {
+        const depth = depthVals[i];
+        const hasData = vals[i] !== null && vals[i] !== undefined;
+        if (hasData && !inBlock) { blockStart = depth; inBlock = true; }
+        if ((!hasData || i === depthVals.length - 1) && inBlock) {
+          const blockEnd = hasData ? depth : depthVals[i - 1];
+          if (blockEnd !== null && blockStart !== null) {
+            const y1 = yScale(blockStart), y2 = yScale(blockEnd);
+            svg.append('rect').attr('x', x + 1).attr('y', y1).attr('width', colW - 2).attr('height', Math.max(1, y2 - y1)).attr('fill', color).attr('fill-opacity', 0.7);
+          }
+          inBlock = false;
+        }
+      }
+    });
+
+  } else {
+    // Single log across wells
+    const mnem = document.getElementById('qc-log-sel')?.value;
+    if (!mnem) return;
+    const wells = Array.from(wellRegistry.values());
+    if (!wells.length) return;
+
+    let globalDMin = Infinity, globalDMax = -Infinity;
+    wells.forEach(w => {
+      const dv = w.las.data[w.depthKey]?.values || [];
+      const valid = dv.filter(d => d !== null);
+      if (valid.length) { globalDMin = Math.min(globalDMin, ...valid); globalDMax = Math.max(globalDMax, ...valid); }
+    });
+    if (!isFinite(globalDMin)) return;
+
+    const colW = 64, labelH = 50, depthTrackW = 65;
+    const chartH = 420;
+    const totalW = depthTrackW + wells.length * (colW + 2) + 10;
+
+    const svg = d3.select(container).append('svg').attr('width', totalW).attr('height', chartH + labelH + 10);
+    const yScale = d3.scaleLinear().domain([globalDMin, globalDMax]).range([labelH, labelH + chartH]);
+
+    const majStep = Math.pow(10, Math.floor(Math.log10((globalDMax - globalDMin) / 8)));
+    const niceS = (globalDMax - globalDMin) / 8 / majStep < 2 ? majStep : majStep * 2;
+    for (let d = Math.ceil(globalDMin / niceS) * niceS; d <= globalDMax; d += niceS) {
+      const y = yScale(d);
+      svg.append('line').attr('x1', 0).attr('y1', y).attr('x2', totalW).attr('y2', y).attr('stroke', '#eee').attr('stroke-width', 0.5);
+      svg.append('text').attr('x', depthTrackW - 4).attr('y', y + 4).attr('text-anchor', 'end').attr('font-size', 12).attr('font-weight', 600).attr('fill', '#37474f').text(d.toFixed(0));
+    }
+
+    wells.forEach((w, wi) => {
+      const x = depthTrackW + wi * (colW + 2);
+      const color = QC_COLORS[wi % QC_COLORS.length];
+      const depthVals = w.las.data[w.depthKey]?.values || [];
+      const vals = w.las.data[mnem]?.values || [];
+
+      svg.append('text').attr('x', x + colW / 2).attr('y', 18).attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', '#1a2327').attr('font-weight', 800)
+        .text(w.name.length > 10 ? w.name.slice(0, 9) + '…' : w.name);
+      svg.append('rect').attr('x', x).attr('y', labelH).attr('width', colW).attr('height', chartH).attr('fill', '#f5f5f5').attr('stroke', '#ddd').attr('stroke-width', 0.5);
+
+      if (!vals.length) {
+        svg.append('text').attr('x', x + colW / 2).attr('y', labelH + 24).attr('text-anchor', 'middle').attr('font-size', 11).attr('font-weight', 600).attr('fill', '#999').text('N/A');
+        return;
+      }
+
+      let inBlock = false, blockStart = 0;
+      for (let i = 0; i < depthVals.length; i++) {
+        const depth = depthVals[i];
+        const hasData = i < vals.length && vals[i] !== null;
+        if (hasData && !inBlock) { blockStart = depth; inBlock = true; }
+        if ((!hasData || i === depthVals.length - 1) && inBlock) {
+          const blockEnd = hasData ? depth : depthVals[Math.max(0, i - 1)];
+          if (blockEnd !== null && blockStart !== null) {
+            const y1 = yScale(blockStart), y2 = yScale(blockEnd);
+            svg.append('rect').attr('x', x + 1).attr('y', y1).attr('width', colW - 2).attr('height', Math.max(1, y2 - y1)).attr('fill', color).attr('fill-opacity', 0.7);
+          }
+          inBlock = false;
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ZONES — user-defined intervals between any two formation tops
+// Stored globally; referenced by formation-name keys so zones resolve
+// to each well's own actual formation depths.
+// ══════════════════════════════════════════════════════════════
+let zonesRegistry = []; // [{ id, name, topFormKey, baseFormKey, color, opacity, visible }]
+let editingZoneId = null; // if not null, saveZone updates instead of creating
+const ZONE_PRESET_COLORS = ['#FFD54F','#81D4FA','#A5D6A7','#F48FB1','#CE93D8','#FFAB91','#B39DDB','#80CBC4','#FFF176','#EF9A9A'];
+
+function getAllFormationNames() {
+  // Unique formation names across all loaded wells (preserves first-seen casing)
+  const seen = new Map(); // key → displayName
+  wellRegistry.forEach(w => {
+    (w.formations || []).forEach(f => {
+      const key = f.name.trim().toLowerCase();
+      if (!seen.has(key)) seen.set(key, f.name.trim());
+    });
+  });
+  return [...seen.entries()].map(([key, name]) => ({ key, name }));
+}
+
+function openZoneModal(zoneId) {
+  const forms = getAllFormationNames();
+  if (forms.length < 2) {
+    alert('You need at least 2 formation tops loaded before defining a zone. Import formations first.');
+    return;
+  }
+  editingZoneId = zoneId || null;
+  const title = document.getElementById('zone-modal-title');
+  const topSel = document.getElementById('zone-top-form');
+  const baseSel = document.getElementById('zone-base-form');
+  const nameIn = document.getElementById('zone-name');
+  const colorIn = document.getElementById('zone-color');
+  const opIn = document.getElementById('zone-opacity');
+
+  topSel.innerHTML = forms.map(f => `<option value="${f.key}">${f.name}</option>`).join('');
+  baseSel.innerHTML = forms.map(f => `<option value="${f.key}">${f.name}</option>`).join('');
+
+  if (zoneId) {
+    const z = zonesRegistry.find(x => x.id === zoneId);
+    if (!z) return;
+    title.textContent = 'Edit Zone';
+    nameIn.value = z.name;
+    topSel.value = z.topFormKey;
+    baseSel.value = z.baseFormKey;
+    colorIn.value = z.color;
+    opIn.value = Math.round(z.opacity * 100);
+  } else {
+    title.textContent = 'Define Zone';
+    nameIn.value = '';
+    topSel.selectedIndex = 0;
+    baseSel.selectedIndex = Math.min(1, forms.length - 1);
+    colorIn.value = ZONE_PRESET_COLORS[zonesRegistry.length % ZONE_PRESET_COLORS.length];
+    opIn.value = 35;
+  }
+  openModal('zone-modal');
+}
+
+function saveZone() {
+  const name = document.getElementById('zone-name').value.trim();
+  const topFormKey = document.getElementById('zone-top-form').value;
+  const baseFormKey = document.getElementById('zone-base-form').value;
+  const color = document.getElementById('zone-color').value;
+  const opacity = parseInt(document.getElementById('zone-opacity').value) / 100;
+
+  if (!name) { alert('Please provide a zone name.'); return; }
+  if (topFormKey === baseFormKey) { alert('Top and base formations must differ.'); return; }
+
+  if (editingZoneId) {
+    const z = zonesRegistry.find(x => x.id === editingZoneId);
+    if (z) { z.name = name; z.topFormKey = topFormKey; z.baseFormKey = baseFormKey; z.color = color; z.opacity = opacity; }
+  } else {
+    zonesRegistry.push({
+      id: 'z' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      name, topFormKey, baseFormKey, color, opacity, visible: true
+    });
+  }
+  editingZoneId = null;
+  closeModal('zone-modal');
+  renderZonesList();
+  plotLogs();
+}
+
+function renderZonesList() {
+  const list = document.getElementById('zones-list');
+  if (!list) return;
+  if (!zonesRegistry.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:6px 0;">No zones defined. Click "+ Add Zone" to create one.</div>';
+    return;
+  }
+  const forms = new Map(getAllFormationNames().map(f => [f.key, f.name]));
+  list.innerHTML = zonesRegistry.map(z => {
+    const topN = forms.get(z.topFormKey) || z.topFormKey;
+    const baseN = forms.get(z.baseFormKey) || z.baseFormKey;
+    return `
+    <div style="display:flex;gap:6px;align-items:center;padding:4px 2px;font-size:11px;border-bottom:1px solid var(--border);">
+      <input type="checkbox" ${z.visible !== false ? 'checked' : ''} onchange="toggleZoneVisibility('${z.id}')" title="Show/hide">
+      <input type="color" value="${z.color}" onchange="updateZoneColor('${z.id}', this.value)" style="width:24px;height:22px;border:none;padding:0;background:none;cursor:pointer;" title="Change color">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${z.name}</div>
+        <div style="color:var(--muted);font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${topN} → ${baseN}</div>
+      </div>
+      <button onclick="openZoneModal('${z.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;" title="Edit">✎</button>
+      <button onclick="removeZone('${z.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleZoneVisibility(id) {
+  const z = zonesRegistry.find(x => x.id === id);
+  if (!z) return;
+  z.visible = z.visible === false ? true : false;
+  plotLogs();
+}
+
+function updateZoneColor(id, color) {
+  const z = zonesRegistry.find(x => x.id === id);
+  if (!z) return;
+  z.color = color;
+  plotLogs();
+}
+
+function removeZone(id) {
+  zonesRegistry = zonesRegistry.filter(z => z.id !== id);
+  renderZonesList();
+  plotLogs();
+}
+
+document.getElementById('zones-add-btn').addEventListener('click', () => openZoneModal(null));
+
+// ══════════════════════════════════════════════════════════════
+// 13b. FORMATION TOPS QC REPORT (Floating Panel)
+// Wells × Formations matrix showing presence/absence of each top per well,
+// plus summary statistics and per-formation depth range.
+// ══════════════════════════════════════════════════════════════
+(function() {
+  const panel = document.getElementById('tops-qc-panel');
+  const header = document.getElementById('tops-qc-panel-drag');
+  let isDragging = false, startX, startY, origLeft, origTop;
+  header.addEventListener('mousedown', e => {
+    if (e.target.closest('button')) return;
+    isDragging = true;
+    startX = e.clientX; startY = e.clientY;
+    const rect = panel.getBoundingClientRect();
+    origLeft = rect.left; origTop = rect.top;
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    panel.style.left = (origLeft + e.clientX - startX) + 'px';
+    panel.style.top = (origTop + e.clientY - startY) + 'px';
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; document.body.style.userSelect = ''; });
+})();
+
+function openTopsQCPanel() { document.getElementById('tops-qc-panel').classList.add('open'); }
+function closeTopsQCPanel() { document.getElementById('tops-qc-panel').classList.remove('open'); }
+
+// Build canonical top→base formation list by aggregating across all wells (by depth order of first occurrence)
+function buildTopsQCMatrix() {
+  const wells = [];
+  wellRegistry.forEach((w, wid) => wells.push({ wid, name: w.name, formations: w.formations || [] }));
+
+  // Collect all unique formation names, sorted by median depth across wells that have them
+  const formStats = new Map(); // key → { name, depths: [], wellIds: Set, color }
+  wells.forEach(w => {
+    w.formations.forEach(f => {
+      const key = f.name.trim().toLowerCase();
+      if (!formStats.has(key)) formStats.set(key, { key, name: f.name.trim(), depths: [], wellIds: new Set(), color: f.color });
+      const s = formStats.get(key);
+      s.depths.push(f.topD);
+      s.wellIds.add(w.wid);
+      s.color = f.color; // latest wins
+    });
+  });
+
+  // Sort formations by median top depth (shallow → deep)
+  const forms = [...formStats.values()].map(s => {
+    const sorted = [...s.depths].sort((a, b) => a - b);
+    const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+    const min = sorted[0] || 0;
+    const max = sorted[sorted.length - 1] || 0;
+    return { ...s, median, min, max, count: sorted.length };
+  }).sort((a, b) => a.median - b.median);
+
+  // Build matrix: for each well, which forms present (with depth) or missing
+  const matrix = wells.map(w => {
+    const row = { wid: w.wid, name: w.name, cells: [] };
+    forms.forEach(f => {
+      const found = w.formations.find(x => x.name.trim().toLowerCase() === f.key);
+      row.cells.push(found ? { present: true, topD: found.topD, color: f.color } : { present: false });
+    });
+    row.presentCount = row.cells.filter(c => c.present).length;
+    row.totalCount = forms.length;
+    return row;
+  });
+
+  return { wells, forms, matrix };
+}
+
+function renderTopsQC() {
+  const body = document.getElementById('tops-qc-body');
+  if (!wellRegistry.size) { body.innerHTML = '<p style="color:var(--muted);">Load wells first.</p>'; return; }
+
+  const { wells, forms, matrix } = buildTopsQCMatrix();
+
+  if (!forms.length) {
+    body.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--muted);background:var(--card);border-radius:6px;">
+        <div style="font-size:32px;margin-bottom:8px;">📋</div>
+        <div style="font-weight:600;font-size:14px;">No formation tops loaded</div>
+        <div style="font-size:11px;margin-top:6px;">Import formations via the sidebar (FORMATIONS → CSV) to see the QC matrix.</div>
+      </div>`;
+    return;
+  }
+
+  const totalWells = wells.length;
+  const totalForms = forms.length;
+  const totalCells = totalWells * totalForms;
+  const presentCells = matrix.reduce((a, r) => a + r.presentCount, 0);
+  const missingCells = totalCells - presentCells;
+  const completenessPct = totalCells ? (100 * presentCells / totalCells) : 0;
+
+  // ── Summary bar ──
+  let html = `
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+    <div style="background:linear-gradient(135deg,#1e88e5 0%,#1565c0 100%);border-radius:6px;padding:10px;color:#fff;">
+      <div style="font-size:10px;opacity:0.85;text-transform:uppercase;font-weight:700;">Wells</div>
+      <div style="font-size:24px;font-weight:800;">${totalWells}</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#8e24aa 0%,#6a1b9a 100%);border-radius:6px;padding:10px;color:#fff;">
+      <div style="font-size:10px;opacity:0.85;text-transform:uppercase;font-weight:700;">Unique Tops</div>
+      <div style="font-size:24px;font-weight:800;">${totalForms}</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#43a047 0%,#2e7d32 100%);border-radius:6px;padding:10px;color:#fff;">
+      <div style="font-size:10px;opacity:0.85;text-transform:uppercase;font-weight:700;">Present / Missing</div>
+      <div style="font-size:20px;font-weight:800;">${presentCells} <span style="opacity:0.7;font-size:15px;">/</span> <span style="color:#ffab91;">${missingCells}</span></div>
+    </div>
+    <div style="background:linear-gradient(135deg,${completenessPct>=90?'#43a047':completenessPct>=70?'#fb8c00':'#e53935'} 0%,${completenessPct>=90?'#2e7d32':completenessPct>=70?'#ef6c00':'#c62828'} 100%);border-radius:6px;padding:10px;color:#fff;">
+      <div style="font-size:10px;opacity:0.85;text-transform:uppercase;font-weight:700;">Completeness</div>
+      <div style="font-size:24px;font-weight:800;">${completenessPct.toFixed(1)}%</div>
+    </div>
+  </div>`;
+
+  // ── Tabs ──
+  html += `
+  <div class="tabs" style="margin-bottom:10px;">
+    <button class="tab active" onclick="switchTopsQCTab('matrix',this)">📊 Matrix</button>
+    <button class="tab" onclick="switchTopsQCTab('by-formation',this)">📐 By Formation</button>
+    <button class="tab" onclick="switchTopsQCTab('by-well',this)">🛢️ By Well</button>
+  </div>`;
+
+  // ── Matrix view ──
+  html += `<div id="tops-qc-tab-matrix" class="tab-content active" style="max-height:460px;overflow:auto;background:#fff;border-radius:6px;padding:2px;">`;
+  html += `<table id="tops-qc-matrix-table" style="border-collapse:separate;border-spacing:0;font-size:13px;color:#222;min-width:100%;">`;
+  // Header row (formations)
+  html += `<thead><tr>`;
+  html += `<th style="position:sticky;left:0;top:0;z-index:3;background:#263238;color:#fff;padding:10px 12px;text-align:left;min-width:170px;font-size:14px;font-weight:800;letter-spacing:0.3px;border-right:1px solid #455a64;">Well</th>`;
+  html += `<th style="position:sticky;top:0;z-index:2;background:#37474f;color:#fff;padding:10px 12px;text-align:center;min-width:70px;font-size:14px;font-weight:800;letter-spacing:0.3px;border-right:1px solid #455a64;">Score</th>`;
+  forms.forEach(f => {
+    html += `<th style="position:sticky;top:0;z-index:2;background:#37474f;color:#ffffff;padding:10px 6px;text-align:center;min-width:70px;font-size:14px;font-weight:800;letter-spacing:0.5px;border-right:1px solid #455a64;border-bottom:4px solid ${f.color};font-family:'Segoe UI',Arial,sans-serif;" title="${f.name}&#10;Median depth: ${f.median.toFixed(1)}&#10;In ${f.count}/${totalWells} wells">${f.name}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+  // Data rows (wells)
+  matrix.forEach((row, ri) => {
+    const rowBg = ri % 2 === 0 ? '#ffffff' : '#f5f7fa';
+    const scorePct = (100 * row.presentCount / row.totalCount);
+    const scoreColor = scorePct >= 90 ? '#2e7d32' : scorePct >= 70 ? '#ef6c00' : scorePct >= 50 ? '#f9a825' : '#c62828';
+    html += `<tr style="background:${rowBg};">`;
+    html += `<td style="position:sticky;left:0;background:${rowBg};padding:10px 12px;font-weight:800;font-size:14px;border-right:1px solid #cfd8dc;color:#1a2327;">${row.name}</td>`;
+    html += `<td style="text-align:center;padding:10px;border-right:1px solid #cfd8dc;"><span style="background:${scoreColor};color:#fff;padding:4px 10px;border-radius:12px;font-weight:800;font-size:12px;">${row.presentCount}/${row.totalCount}</span></td>`;
+    row.cells.forEach((cell, ci) => {
+      if (cell.present) {
+        html += `<td style="text-align:center;padding:9px 6px;border-right:1px solid #eceff1;background:${hexWithAlpha(cell.color, 0.15)};" title="${forms[ci].name}: ${cell.topD.toFixed(2)}">
+          <div style="display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:${cell.color};border:1px solid rgba(0,0,0,0.25);"></div>
+            <span style="color:#1a2327;font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;">${cell.topD.toFixed(1)}</span>
+          </div>
+        </td>`;
+      } else {
+        html += `<td style="text-align:center;padding:9px 6px;border-right:1px solid #eceff1;background:repeating-linear-gradient(45deg,#ffebee,#ffebee 4px,#ffcdd2 4px,#ffcdd2 8px);" title="${forms[ci].name}: MISSING in ${row.name}">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#c62828;color:#fff;border-radius:50%;font-weight:800;font-size:12px;" title="Missing">✕</span>
+        </td>`;
+      }
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  // Legend
+  html += `
+  <div style="display:flex;gap:18px;padding:12px 14px;background:#f5f7fa;border-top:1px solid #cfd8dc;font-size:13px;color:#37474f;align-items:center;flex-wrap:wrap;font-weight:600;">
+    <div style="display:flex;align-items:center;gap:7px;"><div style="width:14px;height:14px;border-radius:50%;background:#43a047;border:1px solid rgba(0,0,0,0.2);"></div>Formation top present (shows depth)</div>
+    <div style="display:flex;align-items:center;gap:7px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:#c62828;color:#fff;border-radius:50%;font-weight:800;font-size:11px;">✕</span>Missing top in this well</div>
+    <div style="display:flex;align-items:center;gap:7px;"><span style="background:#2e7d32;color:#fff;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:800;">score</span>Per-well completeness</div>
+  </div>`;
+  html += `</div>`;
+
+  // ── By-Formation breakdown ──
+  html += `<div id="tops-qc-tab-by-formation" class="tab-content" style="max-height:460px;overflow:auto;">`;
+  forms.forEach(f => {
+    const pct = 100 * f.count / totalWells;
+    const barColor = pct === 100 ? '#43a047' : pct >= 75 ? '#7cb342' : pct >= 50 ? '#fb8c00' : '#e53935';
+    const missingWells = wells.filter(w => !w.formations.find(x => x.name.trim().toLowerCase() === f.key));
+    html += `
+    <div style="background:var(--card);border-left:4px solid ${f.color};border-radius:4px;padding:12px 14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-weight:800;color:var(--text);font-size:15px;letter-spacing:0.3px;">${f.name}</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:600;">Median ${f.median.toFixed(1)} · Range ${f.min.toFixed(1)} – ${f.max.toFixed(1)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;background:rgba(0,0,0,0.3);border-radius:10px;height:20px;overflow:hidden;position:relative;">
+          <div style="width:${pct}%;background:${barColor};height:100%;transition:width 0.3s;"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,0.6);">${f.count}/${totalWells} wells (${pct.toFixed(0)}%)</div>
+        </div>
+      </div>
+      ${missingWells.length ? `<div style="margin-top:8px;font-size:13px;color:#ff8a95;font-weight:600;"><b>Missing in:</b> ${missingWells.map(w=>w.name).join(', ')}</div>` : `<div style="margin-top:8px;font-size:13px;color:#81c784;font-weight:600;">✓ Present in all wells</div>`}
+    </div>`;
+  });
+  html += `</div>`;
+
+  // ── By-Well breakdown ──
+  html += `<div id="tops-qc-tab-by-well" class="tab-content" style="max-height:460px;overflow:auto;">`;
+  matrix.forEach(row => {
+    const pct = 100 * row.presentCount / row.totalCount;
+    const barColor = pct === 100 ? '#43a047' : pct >= 75 ? '#7cb342' : pct >= 50 ? '#fb8c00' : '#e53935';
+    const missingForms = forms.filter((f, i) => !row.cells[i].present);
+    html += `
+    <div style="background:var(--card);border-radius:4px;padding:12px 14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-weight:800;color:var(--text);font-size:15px;letter-spacing:0.3px;">🛢️ ${row.name}</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:600;">${row.presentCount} of ${row.totalCount} tops</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;background:rgba(0,0,0,0.3);border-radius:10px;height:20px;overflow:hidden;position:relative;">
+          <div style="width:${pct}%;background:${barColor};height:100%;"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,0.6);">${pct.toFixed(0)}%</div>
+        </div>
+      </div>
+      ${missingForms.length ? `<div style="margin-top:8px;font-size:13px;color:#ff8a95;font-weight:600;"><b>Missing tops:</b> ${missingForms.map(f=>f.name).join(', ')}</div>` : `<div style="margin-top:8px;font-size:13px;color:#81c784;font-weight:600;">✓ All tops present</div>`}
+    </div>`;
+  });
+  html += `</div>`;
+
+  body.innerHTML = html;
+}
+
+function switchTopsQCTab(which, btn) {
+  document.querySelectorAll('#tops-qc-body .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#tops-qc-body .tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tops-qc-tab-' + which).classList.add('active');
+}
+
+// Helper: convert #RRGGBB + alpha → rgba()
+function hexWithAlpha(hex, a) {
+  if (!hex || hex[0] !== '#') return `rgba(150,150,150,${a})`;
+  const h = hex.replace('#', '');
+  const s = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const r = parseInt(s.slice(0, 2), 16), g = parseInt(s.slice(2, 4), 16), b = parseInt(s.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function exportTopsQCPng() {
+  const table = document.getElementById('tops-qc-matrix-table');
+  if (!table) { alert('No matrix to export.'); return; }
+  // Use html2canvas if available, else serialize table bounds — fallback: use the whole panel body's DOM
+  // Since we don't have html2canvas, we'll fall back to printing the table as an image via SVG foreignObject.
+  const panelBody = document.getElementById('tops-qc-body');
+  const rect = panelBody.getBoundingClientRect();
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('xmlns', svgNS);
+  svg.setAttribute('width', rect.width);
+  svg.setAttribute('height', rect.height);
+  const fo = document.createElementNS(svgNS, 'foreignObject');
+  fo.setAttribute('width', '100%'); fo.setAttribute('height', '100%');
+  const clone = panelBody.cloneNode(true);
+  clone.style.background = '#fff';
+  clone.style.padding = '12px';
+  fo.appendChild(clone);
+  svg.appendChild(fo);
+  const ser = new XMLSerializer().serializeToString(svg);
+  const canvas = document.createElement('canvas');
+  canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+  const ctx = canvas.getContext('2d'); ctx.scale(2, 2); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'formation_tops_qc.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.onerror = () => alert('PNG export failed — try CSV export instead.');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ser);
+}
+
+function exportTopsQCCsv() {
+  if (!wellRegistry.size) { alert('No wells loaded.'); return; }
+  const { wells, forms, matrix } = buildTopsQCMatrix();
+  if (!forms.length) { alert('No formation tops loaded.'); return; }
+  const lines = [];
+  lines.push(['Well', ...forms.map(f => f.name), 'Present', 'Total', 'Completeness_%'].join(','));
+  matrix.forEach(row => {
+    const cells = row.cells.map(c => c.present ? c.topD.toFixed(2) : 'MISSING');
+    const pct = (100 * row.presentCount / row.totalCount).toFixed(1);
+    lines.push([row.name, ...cells, row.presentCount, row.totalCount, pct].join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.download = 'formation_tops_qc.csv';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById('tops-qc-btn').addEventListener('click', () => {
+  if (!wellRegistry.size) { alert('Load at least one well first.'); return; }
+  openTopsQCPanel();
+  renderTopsQC();
+});
+
+// ══════════════════════════════════════════════════════════════
+// 14. EXPORT
+// ══════════════════════════════════════════════════════════════
+document.getElementById('export-btn').addEventListener('click', ()=>openModal('export-modal'));
+
+function exportPlotPNG() {
+  const svgEl = document.querySelector('#pw svg');
+  if (!svgEl) { alert('No plot to export'); return; }
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  canvas.width = svgEl.getAttribute('width') * 2;
+  canvas.height = svgEl.getAttribute('height') * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'well_plot.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
+}
+
+function exportPlotSVG() {
+  const svgEl = document.querySelector('#pw svg');
+  if (!svgEl) { alert('No plot to export'); return; }
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'well_plot.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCurrentCSV() {
+  if (!currentWellId) return;
+  const well = wellRegistry.get(currentWellId);
+  const las = well.las;
+  const selected = [...document.querySelectorAll('#c-list input[type=checkbox]:checked')]
+    .map(c => c.dataset.mnem);
+
+  const topV = parseFloat(document.getElementById('d-top').value);
+  const baseV = parseFloat(document.getElementById('d-base').value);
+  const depthArr = las.data[well.depthKey]?.values || [];
+  const indices = [];
+  for (let i = 0; i < depthArr.length; i++) {
+    const d = depthArr[i];
+    if (d !== null && d >= topV && d <= baseV) indices.push(i);
+  }
+
+  const cols = [well.depthKey, ...selected];
+  let csv = cols.join(',') + '\n';
+  indices.forEach(i => {
+    const row = cols.map(c => {
+      const v = las.data[c]?.values[i];
+      return v === null ? '' : v;
+    });
+    csv += row.join(',') + '\n';
+  });
+
+  downloadText(csv, 'well_data.csv');
+}
+
+function exportAllWellsCSV() {
+  let csv = 'WELL,DEPTH,CURVE,UNIT,VALUE\n';
+  wellRegistry.forEach(well => {
+    const las = well.las;
+    const wellName = las.well.WELL?.value || well.name;
+    las.curves.forEach(c => {
+      if (['DEPT','DEPTH'].includes(c.mnem)) return;
+      const vals = las.data[c.mnem]?.values || [];
+      vals.forEach((v, i) => {
+        const d = las.data[well.depthKey]?.values[i];
+        if (d !== null && v !== null) {
+          csv += [wellName, d, c.mnem, c.unit, v].join(',') + '\n';
+        }
+      });
+    });
+  });
+  downloadText(csv, 'all_wells.csv');
+}
+
+function exportCurrentLAS() {
+  if (!currentWellId) { alert('No well selected.'); return; }
+  const well = wellRegistry.get(currentWellId);
+  const las = well.las;
+  const depthKey = well.depthKey;
+  const selected = [...document.querySelectorAll('#c-list input[type=checkbox]:checked')]
+    .map(c => c.dataset.mnem).filter(m => m !== depthKey);
+
+  const topV = parseFloat(document.getElementById('d-top').value);
+  const baseV = parseFloat(document.getElementById('d-base').value);
+  const depthArr = las.data[depthKey]?.values || [];
+  const indices = [];
+  for (let i = 0; i < depthArr.length; i++) {
+    const d = depthArr[i];
+    if (d !== null && d >= topV && d <= baseV) indices.push(i);
+  }
+  if (!indices.length) { alert('No data in the selected depth range.'); return; }
+
+  const depthUnit = las.data[depthKey]?.unit || 'M';
+  const start = depthArr[indices[0]];
+  const stop = depthArr[indices[indices.length - 1]];
+  const step = (indices.length > 1) ? (stop - start) / (indices.length - 1) : 0;
+  const NULL_VAL = -999.25;
+  const wellName = (las.well.WELL && las.well.WELL.value) || well.name || 'UNKNOWN';
+  const company = (las.well.COMP && las.well.COMP.value) || '';
+  const field = (las.well.FLD && las.well.FLD.value) || '';
+  const location = (las.well.LOC && las.well.LOC.value) || '';
+  const srvc = (las.well.SRVC && las.well.SRVC.value) || '';
+  const date = new Date().toISOString().slice(0,10);
+
+  const pad = (s, n) => (s + ' '.repeat(n)).slice(0, n);
+  const formatLine = (mnem, unit, value, desc) =>
+    `${pad(mnem, 10)}.${pad(unit || '', 6)}${pad(' ' + String(value), 40)}: ${desc || ''}`;
+
+  // Header lines
+  let out = '';
+  out += '~Version Information\n';
+  out += formatLine('VERS', '', '2.0', 'CWLS LOG ASCII STANDARD - VERSION 2.0') + '\n';
+  out += formatLine('WRAP', '', 'NO', 'ONE LINE PER DEPTH STEP') + '\n';
+  out += '~Well Information\n';
+  out += '#MNEM.UNIT              DATA                                   DESCRIPTION\n';
+  out += '#-----    ----         -------------                          -------------\n';
+  out += formatLine('STRT', depthUnit, start.toFixed(4), 'START DEPTH') + '\n';
+  out += formatLine('STOP', depthUnit, stop.toFixed(4), 'STOP DEPTH') + '\n';
+  out += formatLine('STEP', depthUnit, step.toFixed(4), 'STEP') + '\n';
+  out += formatLine('NULL', '', NULL_VAL, 'NULL VALUE') + '\n';
+  out += formatLine('COMP', '', company, 'COMPANY') + '\n';
+  out += formatLine('WELL', '', wellName, 'WELL') + '\n';
+  out += formatLine('FLD',  '', field, 'FIELD') + '\n';
+  out += formatLine('LOC',  '', location, 'LOCATION') + '\n';
+  out += formatLine('SRVC', '', srvc, 'SERVICE COMPANY') + '\n';
+  out += formatLine('DATE', '', date, 'DATE (Exported by Petrolog Studio)') + '\n';
+
+  // Curve info
+  out += '~Curve Information\n';
+  out += '#MNEM.UNIT              API CODE                               DESCRIPTION\n';
+  out += '#-----    ----         -------------                          -------------\n';
+  out += formatLine(depthKey, depthUnit, '', 'DEPTH') + '\n';
+  selected.forEach(m => {
+    const cd = las.data[m];
+    out += formatLine(m, cd?.unit || '', '', cd?.desc || m) + '\n';
+  });
+
+  // Parameters (minimal)
+  out += '~Parameter Information\n';
+  out += '#MNEM.UNIT              VALUE                                  DESCRIPTION\n';
+  out += '#-----    ----         -------------                          -------------\n';
+  out += formatLine('EXPORT', '', 'Petrolog Studio (TerraNomad)', 'EXPORT TOOL') + '\n';
+
+  // Other info
+  out += '~Other\n';
+  out += 'Exported from Petrolog Studio - Well Logs and Formation Tops Analysis Tool\n';
+
+  // ASCII data section
+  out += '~ASCII\n';
+  const curves = [depthKey, ...selected];
+  indices.forEach(i => {
+    const row = curves.map(c => {
+      const v = las.data[c]?.values[i];
+      const num = (v === null || v === undefined || !isFinite(v)) ? NULL_VAL : v;
+      return String(num).padStart(14, ' ');
+    });
+    out += row.join('') + '\n';
+  });
+
+  const safeName = wellName.replace(/[^A-Za-z0-9_-]/g, '_');
+  downloadText(out, safeName + '.las');
+}
+
+function exportJSON() {
+  if (!currentWellId) return;
+  const well = wellRegistry.get(currentWellId);
+  const las = well.las;
+  const selected = [...document.querySelectorAll('#c-list input[type=checkbox]:checked')]
+    .map(c => c.dataset.mnem);
+
+  const topV = parseFloat(document.getElementById('d-top').value);
+  const baseV = parseFloat(document.getElementById('d-base').value);
+  const depthArr = las.data[well.depthKey]?.values || [];
+  const indices = [];
+  for (let i = 0; i < depthArr.length; i++) {
+    const d = depthArr[i];
+    if (d !== null && d >= topV && d <= baseV) indices.push(i);
+  }
+
+  const data = indices.map(i => {
+    const row = { depth: depthArr[i] };
+    selected.forEach(m => {
+      row[m] = las.data[m]?.values[i] || null;
+    });
+    return row;
+  });
+
+  const json = {
+    well: las.well,
+    curves: selected.map(m => ({ mnem: m, unit: las.data[m]?.unit || '', desc: las.data[m]?.desc || '' })),
+    data: data
+  };
+
+  downloadText(JSON.stringify(json, null, 2), 'well_data.json');
+}
+
+function exportPDF() {
+  const svgEl = document.querySelector('#pw svg');
+  if (!svgEl) { alert('No plot to export. Plot first, then export.'); return; }
+  if (typeof window.jspdf === 'undefined') {
+    alert('jsPDF not loaded. Falling back to SVG export.');
+    exportPlotSVG();
+    return;
+  }
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  const w = +svgEl.getAttribute('width'), h = +svgEl.getAttribute('height');
+  canvas.width = w * 2; canvas.height = h * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0);
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: w > h ? 'landscape' : 'portrait', unit: 'pt', format: [w + 40, h + 120] });
+    pdf.setFontSize(16);
+    pdf.text('Well Log Plot', 20, 30);
+    if (currentWellId) {
+      const well = wellRegistry.get(currentWellId);
+      pdf.setFontSize(10);
+      pdf.text(`Well: ${well.name}  |  File: ${well.fileName}`, 20, 50);
+    }
+    pdf.addImage(imgData, 'PNG', 20, 70, w, h);
+    pdf.save('well_plot.pdf');
+  };
+  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
+}
+
+function downloadText(text, filename) {
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════════════════
+// 15. UTILITIES
+// ══════════════════════════════════════════════════════════════
+function fmtVal(v) {
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  if (Math.abs(v) >= 100000 || (Math.abs(v) < 0.001 && v !== 0)) return v.toExponential(2);
+  if (Math.abs(v) >= 1000) return v.toFixed(0);
+  if (Math.abs(v) >= 100) return v.toFixed(1);
+  if (Math.abs(v) >= 10) return v.toFixed(2);
+  return v.toFixed(3);
+}
+
+function niceStep(rough) {
+  if (!rough || !isFinite(rough)) return 100;
+  const p = Math.pow(10, Math.floor(Math.log10(rough)));
+  const f = rough / p;
+  return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+}
+
+function tickArr(lo, hi, step) {
+  const result = [];
+  const start = Math.ceil(lo / step) * step;
+  for (let v = start; v <= hi + 1e-9; v += step) result.push(+v.toFixed(10));
+  return result;
+}
+
+function bisect(arr, target) {
+  let lo = 0, hi = arr.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid] < target) lo = mid + 1;
+    else hi = mid;
+  }
+  if (lo > 0 && Math.abs(arr[lo - 1] - target) < Math.abs(arr[lo] - target)) lo--;
+  return Math.max(0, Math.min(arr.length - 1, lo));
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => {
+    if (e.target === m) closeModal(m.id);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+// 16. CSV FILE UPLOAD FOR FORMATIONS
+// ══════════════════════════════════════════════════════════════
+document.getElementById('form-csv-file').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('csv-text').value = ev.target.result;
+    document.getElementById('form-csv-fname').textContent = file.name;
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ══════════════════════════════════════════════════════════════
+// 17a. FORMATION TOPS DISPLAY TOGGLE
+// ══════════════════════════════════════════════════════════════
+document.getElementById('formations-display-btn').addEventListener('click', () => {
+  showFormationTops = !showFormationTops;
+  const btn = document.getElementById('formations-display-btn');
+  btn.textContent = showFormationTops ? '👁️ Show' : '🚫 Hide';
+  btn.style.background = showFormationTops ? '' : '#555';
+  const optsPanel = document.getElementById('formation-display-opts');
+  optsPanel.style.display = showFormationTops ? 'block' : 'none';
+  plotLogs();
+});
+
+// Re-plot when display options change (both change + input to be safe)
+['form-show-lines','form-show-labels','form-show-fill','form-line-style','form-line-width'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', () => plotLogs());
+    el.addEventListener('input', () => plotLogs());
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// 17b. SESSION SAVE / RESTORE
+// ══════════════════════════════════════════════════════════════
+function saveSession() {
+  if (!wellRegistry.size) { alert('No wells loaded to save.'); return; }
+  const session = {
+    version: 2,
+    timestamp: new Date().toISOString(),
+    currentWellId: currentWellId,
+    wells: []
+  };
+  wellRegistry.forEach((w, wid) => {
+    session.wells.push({
+      wid,
+      name: w.name,
+      fileName: w.fileName,
+      lasRaw: w.las._raw || null,
+      depthKey: w.depthKey,
+      curveSettings: w.curveSettings,
+      selected: w.selected,
+      visible: w.visible,
+      formations: w.formations
+    });
+  });
+  session.zones = zonesRegistry;
+
+  // Save checked curves and their track assignments
+  const curveState = [];
+  document.querySelectorAll('#c-list input[type=checkbox]').forEach(cb => {
+    const mnem = cb.dataset.mnem;
+    const trk = document.getElementById(`trk_${mnem}`)?.value || '1';
+    curveState.push({ mnem, checked: cb.checked, track: trk });
+  });
+  session.curveState = curveState;
+  session.depthTop = document.getElementById('d-top')?.value || '';
+  session.depthBase = document.getElementById('d-base')?.value || '';
+  session.plotHeight = document.getElementById('ph')?.value || '900';
+
+  const blob = new Blob([JSON.stringify(session)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'las_session_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById('session-file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      loadSession(JSON.parse(ev.target.result));
+    } catch (err) {
+      alert('Error loading session: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function loadSession(session) {
+  if (!session.wells || !session.wells.length) { alert('No wells in session file.'); return; }
+
+  wellRegistry.clear();
+  currentWellId = null;
+
+  let loadedCount = 0;
+  session.wells.forEach(ws => {
+    if (!ws.lasRaw) { return; }
+    try {
+      const las = parseLAS(ws.lasRaw);
+      wellRegistry.set(ws.wid, {
+        name: ws.name,
+        fileName: ws.fileName,
+        las: las,
+        depthKey: ws.depthKey,
+        curveSettings: ws.curveSettings || {},
+        selected: ws.selected || false,
+        visible: ws.visible !== false,
+        formations: ws.formations || []
+      });
+      loadedCount++;
+    } catch (err) {
+      console.warn('Failed to restore well ' + ws.name, err);
+    }
+  });
+
+  if (!loadedCount) { alert('Could not restore any wells from session.'); return; }
+
+  currentWellId = session.currentWellId && wellRegistry.has(session.currentWellId)
+    ? session.currentWellId : wellRegistry.keys().next().value;
+
+  // Restore zones (if present)
+  zonesRegistry = Array.isArray(session.zones) ? session.zones : [];
+  renderZonesList();
+
+  updateWellList();
+  populateWellInfo();
+
+  // Restore depth range and plot height
+  setTimeout(() => {
+    if (session.depthTop) document.getElementById('d-top').value = session.depthTop;
+    if (session.depthBase) document.getElementById('d-base').value = session.depthBase;
+    if (session.plotHeight) document.getElementById('ph').value = session.plotHeight;
+
+    // Restore curve checkboxes and track assignments
+    if (session.curveState) {
+      session.curveState.forEach(cs => {
+        const cb = document.querySelector(`#c-list input[data-mnem="${cs.mnem}"]`);
+        if (cb) cb.checked = cs.checked;
+        const trk = document.getElementById(`trk_${cs.mnem}`);
+        if (trk) trk.value = cs.track;
+      });
+      updCount();
+    }
+    alert(`Session restored: ${loadedCount} well(s) loaded.`);
+  }, 200);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 20. VERTICAL SCALE ZOOM
+// ══════════════════════════════════════════════════════════════
+let vZoomFactor = 1.0;
+const V_ZOOM_STEP = 0.25;
+const V_ZOOM_MIN = 0.25;
+const V_ZOOM_MAX = 10.0;
+const BASE_PLOT_H = 900; // default height
+
+function updateVZoom(newFactor) {
+  vZoomFactor = Math.max(V_ZOOM_MIN, Math.min(V_ZOOM_MAX, Math.round(newFactor * 100) / 100));
+  document.getElementById('vzoom-label').textContent = vZoomFactor.toFixed(1) + '×';
+  // Update the plot height input and re-render
+  const newH = Math.round(BASE_PLOT_H * vZoomFactor);
+  document.getElementById('ph').value = Math.max(300, Math.min(10000, newH));
+  plotLogs();
+}
+
+document.getElementById('vzoom-in-btn').addEventListener('click', () => {
+  updateVZoom(vZoomFactor + V_ZOOM_STEP);
+});
+document.getElementById('vzoom-out-btn').addEventListener('click', () => {
+  updateVZoom(vZoomFactor - V_ZOOM_STEP);
+});
+document.getElementById('vzoom-reset-btn').addEventListener('click', () => {
+  updateVZoom(1.0);
+});
+
+// Ctrl + Mouse wheel zoom on plot area
+document.getElementById('plot-scroll').addEventListener('wheel', e => {
+  if (!e.ctrlKey) return; // Only zoom with Ctrl held
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.15 : 0.15;
+  updateVZoom(vZoomFactor + delta);
+}, { passive: false });
+
+// Sync vzoom label when plot height input is changed manually
+document.getElementById('ph').addEventListener('change', () => {
+  const h = parseInt(document.getElementById('ph').value) || BASE_PLOT_H;
+  vZoomFactor = Math.round((h / BASE_PLOT_H) * 100) / 100;
+  document.getElementById('vzoom-label').textContent = vZoomFactor.toFixed(1) + '×';
+});
+
+// ── Mouse-drag panning for the plot scroll area ──
+(function() {
+  const ps = document.getElementById('plot-scroll');
+  if (!ps) return;
+  let isPanning = false, startX, startY, scrollL, scrollT;
+  ps.addEventListener('mousedown', e => {
+    if (e.button === 0) {
+      isPanning = true;
+      startX = e.clientX; startY = e.clientY;
+      scrollL = ps.scrollLeft; scrollT = ps.scrollTop;
+      ps.classList.add('panning');
+      e.preventDefault();
+    }
+  });
+  document.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    ps.scrollLeft = scrollL - (e.clientX - startX);
+    ps.scrollTop = scrollT - (e.clientY - startY);
+  });
+  document.addEventListener('mouseup', () => {
+    isPanning = false;
+    ps.classList.remove('panning');
+  });
+})();
+</script>
+</body>
+</html>
