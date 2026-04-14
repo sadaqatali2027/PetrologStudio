@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Petrolog Studio — Well Logs and Formation Tops Analysis Tool</title>
+  <meta name="description" content="Petrolog Studio by TerraNomad — a single-file, browser-based petrophysics workstation for LAS 1.2 & 2.0 well logs, formation tops correlation, zones, statistics, QC reports and exports (PNG, SVG, CSV, LAS 2.0, PDF).">
+  <meta property="og:title" content="Petrolog Studio — Well Logs and Formation Tops Analysis Tool">
+  <meta property="og:description" content="Browser-based petrophysics workstation by TerraNomad. Multi-well LAS visualization, formation tops, zones, QC reports, and exports.">
+  <meta property="og:image" content="petrolog-banner.png">
+  <meta name="theme-color" content="#0d1520">
+  <style>
+    :root {
+      --bg:#05080c;
+      --bg2:#0d1520;
+      --card:#131c28;
+      --card2:#1a2431;
+      --border:#2a3a4e;
+      --text:#eceff1;
+      --muted:#90a4ae;
+      --cyan:#4dd0e1;
+      --red:#ef5350;
+      --amber:#ffa726;
+      --purple:#ab47bc;
+      --green:#66bb6a;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg) 0%, var(--bg2) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 64px; }
+
+    /* Hero */
+    .hero { margin-bottom: 48px; }
+    .hero-banner {
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(77,208,225,0.08);
+    }
+    .hero-banner img { width: 100%; display: block; }
+
+    .hero-cta {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-top: 28px; align-items: center; justify-content: center;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: 10px;
+      font-size: 15px; font-weight: 700; letter-spacing: 0.3px;
+      text-decoration: none; transition: all 0.2s ease;
+      border: 1px solid transparent;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan) 0%, #26c6da 100%);
+      color: #0d1520;
+      box-shadow: 0 6px 20px rgba(77,208,225,0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(77,208,225,0.5);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    /* Sections */
+    h2 {
+      font-size: 26px; font-weight: 800; letter-spacing: 0.3px;
+      margin: 48px 0 20px; color: var(--text);
+    }
+    h2 .accent { color: var(--cyan); }
+    p.lead { font-size: 16px; color: var(--muted); max-width: 900px; margin: 0 0 24px; }
+
+    /* Feature grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: linear-gradient(180deg, var(--card) 0%, var(--card2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      transition: all 0.2s ease;
+    }
+    .card:hover {
+      border-color: rgba(77,208,225,0.5);
+      transform: translateY(-2px);
+    }
+    .card-ico {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .card h3 {
+      font-size: 16px; font-weight: 800;
+      margin: 0 0 8px; color: var(--text);
+    }
+    .card p { font-size: 14px; color: var(--muted); margin: 0; }
+
+    .ic-cyan { background: rgba(77,208,225,0.15); color: var(--cyan); }
+    .ic-amber { background: rgba(255,167,38,0.15); color: var(--amber); }
+    .ic-purple { background: rgba(171,71,188,0.15); color: var(--purple); }
+    .ic-green { background: rgba(102,187,106,0.15); color: var(--green); }
+    .ic-red { background: rgba(239,83,80,0.15); color: var(--red); }
+    .ic-blue { background: rgba(110,159,214,0.15); color: #6e9fd6; }
+
+    /* Export list */
+    .exports {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .chip {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .chip-ico { font-size: 20px; }
+    .chip-title { font-weight: 700; font-size: 14px; color: var(--text); display: block; }
+    .chip-sub { font-size: 12px; color: var(--muted); }
+
+    /* Steps */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--cyan);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .step-n {
+      display: inline-block;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--cyan); color: #0d1520;
+      text-align: center; line-height: 28px;
+      font-weight: 800; font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .step h4 { margin: 0 0 4px; font-size: 15px; color: var(--text); }
+    .step p { margin: 0; font-size: 13px; color: var(--muted); }
+
+    /* Badges row */
+    .badges {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      justify-content: center; margin-top: 14px;
+    }
+    .badge {
+      background: rgba(77,208,225,0.1);
+      color: var(--cyan);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(77,208,225,0.3);
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 64px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted); font-size: 13px;
+    }
+    footer .brand-red { color: var(--red); font-weight: 800; }
+    footer .brand-cyan { color: var(--cyan); font-weight: 800; }
+    footer a { color: var(--cyan); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .wrap { padding: 20px 14px 40px; }
+      h2 { font-size: 22px; }
+      .btn { padding: 12px 20px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-banner">
+        <img src="petrolog-banner.png" alt="Petrolog Studio by TerraNomad — Well Logs and Formation Tops Analysis Tool">
+      </div>
+
+      <div class="badges">
+        <span class="badge">LAS 1.2 &amp; 2.0</span>
+        <span class="badge">100% Browser</span>
+        <span class="badge">No Install</span>
+        <span class="badge">Offline Capable</span>
+        <span class="badge">Private — data never leaves your machine</span>
+      </div>
+
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="PetrologStudio.html">🚀 Launch Petrolog Studio</a>
+        <a class="btn btn-ghost" href="README.md">📖 Read the Docs</a>
+      </div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section>
+      <h2>A Petrophysics Workstation <span class="accent">in a Single HTML File</span></h2>
+      <p class="lead">
+        Petrolog Studio loads one or many LAS files, renders professional multi-track well logs,
+        correlates formation tops across wells, builds user-defined zones, runs statistical analysis,
+        and produces three distinct QC reports — all without installing anything. Open the file in
+        any modern browser and you are working.
+      </p>
+    </section>
+
+    <!-- FEATURES -->
+    <section>
+      <h2>Core <span class="accent">Capabilities</span></h2>
+      <div class="grid">
+        <div class="card">
+          <div class="card-ico ic-cyan">📊</div>
+          <h3>Multi-Well Cross-Section</h3>
+          <p>Load any number of LAS files and render them side by side with configurable tracks, color, scale, and line styles per curve.</p>
+        </div>
+        <div class="card">
+          <div class="card-ico ic-amber">📍</div>
+          <h3>Formation Tops</h3>
+          <p>Import tops from CSV, label each formation once per well, and draw Petrel-style diagonal correlation lines between adjacent wells.</p>
+        </div>
+        <div class="card">
+          <div class="card-ico ic-purple">🎨</div>
+          <h3>Zones &amp; Fills</h3>
+          <p>Define coloured intervals between any two formation tops. Fills render across wells and break cleanly at missing tops.</p>
+        </div>
+        <div class="card">
+          <div class="card-ico ic-blue">📈</div>
+          <h3>Statistics &amp; Analysis</h3>
+          <p>Per-well per-curve stats table, histograms with configurable bins, and crossplots with linear regression &amp; R².</p>
+        </div>
+        <div class="card">
+          <div class="card-ico ic-green">✓</div>
+          <h3>Log QC &amp; Coverage</h3>
+          <p>Visual data-completeness grid, range validation (GR, RHOB, NPHI, RT), and depth monotonicity / gap / duplicate checks.</p>
+        </div>
+        <div class="card">
+          <div class="card-ico ic-red">🎯</div>
+          <h3>Formation Tops QC</h3>
+          <p>Wells × formations matrix showing which tops are present or missing, with summary scores and by-formation / by-well breakdowns.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW TO USE -->
+    <section>
+      <h2>Get Started in <span class="accent">Four Steps</span></h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-n">1</div>
+          <h4>Launch</h4>
+          <p>Click the launch button above. No server, no install, no sign-up.</p>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <h4>Load LAS</h4>
+          <p>Drag and drop your .las files onto the drop zone, or click to browse.</p>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <h4>Configure</h4>
+          <p>Toggle curves, set colors, define zones, import formation tops from CSV.</p>
+        </div>
+        <div class="step">
+          <div class="step-n">4</div>
+          <h4>Analyze &amp; Export</h4>
+          <p>Open Statistics, QC reports, then export to PNG, SVG, CSV, LAS 2.0, or PDF.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPORTS -->
+    <section>
+      <h2>Export <span class="accent">Anything</span></h2>
+      <div class="exports">
+        <div class="chip">
+          <div class="chip-ico">🖼️</div>
+          <div><span class="chip-title">PNG</span><span class="chip-sub">Plot &amp; QC charts at 2× DPI</span></div>
+        </div>
+        <div class="chip">
+          <div class="chip-ico">📐</div>
+          <div><span class="chip-title">SVG</span><span class="chip-sub">Vector plot for press-quality reports</span></div>
+        </div>
+        <div class="chip">
+          <div class="chip-ico">📄</div>
+          <div><span class="chip-title">CSV</span><span class="chip-sub">Current well or all wells long-format</span></div>
+        </div>
+        <div class="chip">
+          <div class="chip-ico">🛢️</div>
+          <div><span class="chip-title">LAS 2.0</span><span class="chip-sub">Standards-compliant well data file</span></div>
+        </div>
+        <div class="chip">
+          <div class="chip-ico">📕</div>
+          <div><span class="chip-title">PDF</span><span class="chip-sub">Multi-page report with plot &amp; headers</span></div>
+        </div>
+        <div class="chip">
+          <div class="chip-ico">🎯</div>
+          <div><span class="chip-title">QC CSV</span><span class="chip-sub">Formation tops completeness matrix</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHO -->
+    <section>
+      <h2>Built For <span class="accent">Oil &amp; Gas</span></h2>
+      <p class="lead">
+        Petrolog Studio is designed for petrophysicists QC-ing newly delivered LAS deliverables,
+        geologists correlating formation tops across a field, reservoir engineers checking log
+        coverage and data completeness, and students or consultants who want a zero-install,
+        zero-cost tool that rivals the plotting features of commercial packages.
+      </p>
+      <div class="hero-cta" style="margin-top:24px;">
+        <a class="btn btn-primary" href="PetrologStudio.html">🚀 Launch the Tool</a>
+        <a class="btn btn-ghost" href="https://github.com" target="_blank" rel="noopener">⭐ Star on GitHub</a>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>
+        <b>Petrolog <span class="brand-cyan">Studio</span></b> &middot;
+        By <span class="brand-red">TerraNomad</span> &middot;
+        Well Logs and Formation Tops Analysis Tool
+      </p>
+      <p>MIT License &middot; <a href="README.md">Documentation</a> &middot; <a href="PetrologStudio.html">Launch App</a></p>
+    </footer>
+  </div>
+</body>
+</html>
